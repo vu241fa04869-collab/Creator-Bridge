@@ -25,6 +25,8 @@ const grid = $("#creator-grid"), backdrop = $("#modal-backdrop"), modal = $("#mo
 const API_BASE = ($('meta[name="api-base"]')?.content || "").replace(/\/$/, "");
 let remoteBriefs = null;
 let toastTimer;
+let complaintHistory = [];
+let complaintBusy = false;
 const localBriefs = () => { try { return JSON.parse(localStorage.getItem("creatorbridge-briefs") || "[]"); } catch { return []; } };
 const briefs = () => remoteBriefs ?? localBriefs();
 async function apiRequest(path, options = {}) {
@@ -95,11 +97,68 @@ function renderBriefs(){
   if(!items.length){host.innerHTML='<div class="brief-empty"><div class="empty-symbol">▤</div><h2>Your next idea starts here.</h2><p>Create a brief to give creators a clear starting point for your campaign.</p><button class="button button-primary" id="empty-create">＋ Create your first brief</button></div>';return;}
   host.innerHTML=items.slice().reverse().map(b=>`<article class="brief-row"><div class="brief-main"><span class="brief-icon">▤</span><span><h3>${escapeHtml(b.title)}</h3><p>${escapeHtml(b.brand)} · ${escapeHtml(b.type)}${b.creator?` · For ${escapeHtml(byId(b.creator)?.name||"creator")}`:""}</p></span></div><div class="brief-meta"><span>${escapeHtml(b.createdAt)}</span><span class="status-pill">Draft</span><button class="view-profile" data-brief="${escapeHtml(b.id)}">View ↗</button></div></article>`).join("");
 }
-function showView(name){const explore=name==="explore";$("#explore-view").classList.toggle("hidden",!explore);$("#briefs-view").classList.toggle("hidden",explore);document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("is-active",b.dataset.view===name));$("#breadcrumb-current").textContent=explore?"Explore creators":"My briefs";if(!explore)renderBriefs();}
+function showView(name){
+  const views={explore:"#explore-view",briefs:"#briefs-view",complaints:"#complaints-view"};
+  Object.entries(views).forEach(([key,selector])=>$(selector).classList.toggle("hidden",key!==name));
+  document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("is-active",b.dataset.view===name));
+  $("#breadcrumb-current").textContent={explore:"Explore creators",briefs:"My briefs",complaints:"Resolution studio"}[name]||"Explore creators";
+  if(name==="briefs")renderBriefs();
+  if(name==="complaints")setTimeout(()=>$("#complaint-input")?.focus(),0);
+}
 function notify(message){const toast=$("#toast");toast.textContent=message;toast.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove("show"),2400);}
+
+function setServiceStatus(health){
+  const badge=$("#service-indicator");
+  const mode=$("#complaint-mode");
+  if(!badge)return;
+  const database=health?.database==="mongodb";
+  const ai=Boolean(health?.ai);
+  badge.classList.toggle("is-connected",database);
+  badge.classList.toggle("is-demo",!ai);
+  badge.title=`Database: ${health?.database||"offline"}; Gemini AI: ${ai?"configured":"not configured"}`;
+  badge.querySelector("span").textContent=database?(ai?"Mongo + AI":"Mongo connected · AI key needed"):(ai?"AI ready · demo data":"Guided demo mode");
+  if(mode)mode.textContent=ai?"Gemini AI · private session":"Guided demo · add Gemini for AI";
+}
+
+function scrollComplaintChat(){const host=$("#complaint-messages");host.scrollTop=host.scrollHeight;}
+function addChatBubble(role,text,label){
+  const host=$("#complaint-messages"), article=document.createElement("article"), avatar=document.createElement("div"), content=document.createElement("div"), speaker=document.createElement("span"), paragraph=document.createElement("p");
+  article.className=`chat-message ${role}-message`;avatar.className="message-avatar";avatar.textContent=role==="user"?"Y":"B";content.className="message-content";speaker.className="speaker-label";speaker.textContent=label;paragraph.textContent=text;content.append(speaker,paragraph);article.append(avatar,content);host.append(article);scrollComplaintChat();return {article,content};
+}
+function addTypingBubble(){
+  const host=$("#complaint-messages"), article=document.createElement("article"), avatar=document.createElement("div"), content=document.createElement("div"), speaker=document.createElement("span"), typing=document.createElement("span");
+  article.className="chat-message assistant-message";avatar.className="message-avatar";avatar.textContent="B";content.className="message-content";speaker.className="speaker-label";speaker.textContent="BRIDGEBUDDY · THINKING";typing.className="typing-indicator";typing.innerHTML="<i></i><i></i><i></i> Putting the facts in order";content.append(speaker,typing);article.append(avatar,content);host.append(article);scrollComplaintChat();return article;
+}
+function addComplaintResult(result){
+  const label=result.source==="gemini"?"BRIDGEBUDDY · AI GUIDE":"BRIDGEBUDDY · GUIDED DEMO";
+  const {content}=addChatBubble("assistant",String(result.summary||"Here is a clear next step."),label);
+  const details=document.createElement("div");details.className="resolution-result";
+  const meta=document.createElement("div");meta.className="result-meta";meta.textContent=`${result.category||"Complaint"} · ${result.urgency||"Routine"}`;details.append(meta);
+  if(result.clarifyingQuestion){const question=document.createElement("section"),heading=document.createElement("h4"),text=document.createElement("p");heading.textContent="ONE USEFUL QUESTION";text.textContent=result.clarifyingQuestion;question.append(heading,text);details.append(question);}
+  const actionSection=document.createElement("section"),actionHeading=document.createElement("h4"),list=document.createElement("ol");actionHeading.textContent="A FAIR WAY FORWARD";(result.nextSteps||[]).slice(0,4).forEach(item=>{const li=document.createElement("li");li.textContent=String(item);list.append(li);});actionSection.append(actionHeading,list);details.append(actionSection);
+  const draftSection=document.createElement("section"),draftHeading=document.createElement("h4"),draft=document.createElement("div"),copy=document.createElement("button");draftHeading.textContent="MESSAGE YOU CAN EDIT";draft.className="message-draft";draft.textContent=String(result.messageDraft||"");copy.className="copy-draft";copy.type="button";copy.textContent="Copy draft";copy.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(draft.textContent);notify("Draft copied.");}catch{notify("Select and copy the draft manually.");}});draftSection.append(draftHeading,draft,copy);details.append(draftSection);
+  if(result.privacyReminder){const privacy=document.createElement("small");privacy.textContent=String(result.privacyReminder);details.append(privacy);}
+  content.append(details);scrollComplaintChat();
+}
+function resetComplaintChat(){
+  complaintHistory=[];$("#complaint-messages").innerHTML='<div class="chat-date">TODAY · YOUR SESSION IS NOT SAVED</div><article class="chat-message assistant-message"><div class="message-avatar">B</div><div class="message-content"><span class="speaker-label">BRIDGEBUDDY <span>JUST NOW</span></span><p>Hi, I’m here to help you move a tough situation toward a clear next step. What happened, and what outcome would feel fair to you?</p><small>You can keep names and account details out of it.</small></div></article>';$("#complaint-suggestions").classList.remove("hidden");$("#complaint-input").value="";$("#complaint-char-count").textContent="0 / 3,000";$("#complaint-input").focus();
+}
+async function sendComplaint(message,context=null){
+  if(complaintBusy||!message.trim())return;
+  const clean=message.trim().slice(0,3000);complaintBusy=true;$("#complaint-send").disabled=true;$("#complaint-input").disabled=true;$("#complaint-suggestions").classList.add("hidden");
+  addChatBubble("user",clean,"YOU · JUST NOW");complaintHistory.push({role:"user",content:clean});const typing=addTypingBubble();
+  try{
+    const result=await apiRequest("/api/ai/complaint",{method:"POST",body:JSON.stringify({message:clean,history:complaintHistory.slice(0,-1).slice(-8),context})});
+    typing.remove();addComplaintResult(result);
+    complaintHistory.push({role:"assistant",content:[result.summary,result.clarifyingQuestion,...(result.nextSteps||[]),result.messageDraft].filter(Boolean).join("\n")});
+  }catch(error){
+    typing.remove();addChatBubble("assistant",error.message||"I couldn’t reach the complaint helper. Please try again.","BRIDGEBUDDY · CONNECTION ISSUE");
+  }finally{complaintBusy=false;$("#complaint-send").disabled=false;$("#complaint-input").disabled=false;$("#complaint-input").focus();}
+}
 
 populateFilters();renderCreators();updateBriefCount();
 async function hydrateFromApi(){
+  try{setServiceStatus(await apiRequest("/api/health"));}catch{setServiceStatus(null);}
   try{const records=await apiRequest("/api/creators");if(Array.isArray(records)&&records.length){creators=records;document.querySelectorAll("#specialty-filter option:not(:first-child),#tool-filter option:not(:first-child),#type-filter option:not(:first-child)").forEach(option=>option.remove());populateFilters();renderCreators();}}
   catch{notify("API offline — showing the included demo creators.");}
   await refreshRemoteBriefs();
@@ -108,6 +167,12 @@ hydrateFromApi();
 ["#search-input","#specialty-filter","#tool-filter","#type-filter","#sort-select"].forEach(selector=>$(selector).addEventListener(selector==="#search-input"?"input":"change",renderCreators));
 $("#clear-filters").addEventListener("click",clearFilters);
 document.querySelectorAll(".nav-item").forEach(button=>button.addEventListener("click",()=>showView(button.dataset.view)));
+$("#open-complaint-studio").addEventListener("click",()=>showView("complaints"));
+$("#complaint-form").addEventListener("submit",event=>{event.preventDefault();const input=$("#complaint-input"),message=input.value;input.value="";$("#complaint-char-count").textContent="0 / 3,000";input.style.height="";sendComplaint(message);});
+$("#complaint-input").addEventListener("input",event=>{$("#complaint-char-count").textContent=`${event.target.value.length.toLocaleString("en-IN")} / 3,000`;event.target.style.height="auto";event.target.style.height=`${Math.min(event.target.scrollHeight,120)}px`;});
+$("#clear-complaint-chat").addEventListener("click",resetComplaintChat);
+document.querySelectorAll("[data-scenario]").forEach(button=>button.addEventListener("click",()=>{showView("complaints");const input=$("#complaint-input");input.value=button.dataset.message||"";$("#complaint-char-count").textContent=`${input.value.length} / 3,000`;input.focus();}));
+document.querySelectorAll("#complaint-suggestions [data-prompt]").forEach(button=>button.addEventListener("click",()=>{const input=$("#complaint-input");input.value=button.dataset.prompt;$("#complaint-char-count").textContent=`${input.value.length} / 3,000`;$("#complaint-form").requestSubmit();}));
 $("#creator-grid").addEventListener("click",event=>{const button=event.target.closest("[data-profile]");if(button)profileModal(button.dataset.profile)});
 $("#create-brief-top").addEventListener("click",()=>openBriefForm());$("#create-brief-list").addEventListener("click",()=>openBriefForm());$("#sidebar-create").addEventListener("click",()=>openBriefForm());
 backdrop.addEventListener("click",event=>{if(event.target===backdrop||event.target.closest("[data-close]"))closeModal();});
@@ -132,3 +197,4 @@ modal.addEventListener("submit",event=>{
 });
 $("#brief-list").addEventListener("click",event=>{if(event.target.id==="empty-create")openBriefForm();const button=event.target.closest("[data-brief]");if(button){const row=briefs().find(b=>b.id===button.dataset.brief);if(row)showModal(`<div class="modal-head"><div><h2 id="modal-title">${escapeHtml(row.title)}</h2><p>${escapeHtml(row.brand)} · ${escapeHtml(row.type)} · Draft</p></div><button class="close-modal" data-close aria-label="Close">×</button></div><div class="modal-content"><div class="form-grid"><div class="profile-section"><h4>THE IDEA</h4><p>${escapeHtml(row.idea)}</p></div><div class="profile-section"><h4>CREATIVE DIRECTION</h4><p>${escapeHtml(row.style||"Not specified")} · ${escapeHtml(row.ratio)}</p></div><div class="profile-section"><h4>DETAILS</h4><p>Budget: ${row.budget?`₹${escapeHtml(row.budget)}`:"Not specified"}<br>Deadline: ${escapeHtml(row.deadline||"Not specified")}<br>Commercial rights: ${row.commercial?"Required":"Not specified"}</p></div></div></div>`);}});
 document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!backdrop.classList.contains("hidden"))closeModal();});
+

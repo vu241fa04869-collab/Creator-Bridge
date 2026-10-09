@@ -1,6 +1,6 @@
 # CreatorBridge AI
 
-CreatorBridge AI is a hackathon marketplace prototype where brands can discover AI creators, inspect their tools and workflows, and create campaign briefs. The project includes a Vite frontend, an Express API, MongoDB support, a local JSON fallback for brief storage, and an optional Gemini powered brief starter.
+CreatorBridge AI is a hackathon marketplace prototype where brands can discover AI creators, inspect their tools and workflows, create campaign briefs, and get complaint-resolution guidance from BridgeBuddy. The project includes a Vite frontend, an Express API, MongoDB support, a local JSON fallback for brief storage, and optional Gemini-powered brief and complaint assistants.
 
 ## Run locally
 
@@ -25,6 +25,8 @@ To enable real AI brief generation, set `GEMINI_API_KEY` in `server/.env`, resta
 - Campaign briefs with content type, style, aspect ratio, commercial usage, budget, deadline, and optional creator association.
 - Brief list and detail views, saved in MongoDB or the local JSON fallback.
 - Gemini structured-output endpoint that turns an idea into editable brief fields.
+- BridgeBuddy complaint-resolution chat that organizes an issue into next steps and an editable message draft; if Gemini is not configured, it clearly uses a guided demo response.
+- Chrome side-panel extension for BridgeBuddy. Page context is attached only after an explicit click and includes the current tab title and URL, not page contents.
 - Responsive desktop and mobile layout.
 - Seed profiles and portfolio concepts are explicitly labeled as demos and unverified; there is no fake verification badge. The concept covers are code-built placeholders, not generated artwork. Replace them with approved creator work before presenting a real marketplace.
 
@@ -38,6 +40,13 @@ To enable real AI brief generation, set `GEMINI_API_KEY` in `server/.env`, resta
 | `GET` | `/api/briefs` | List saved campaign briefs |
 | `POST` | `/api/briefs` | Validate and save a campaign brief |
 | `POST` | `/api/ai/brief` | Generate a structured first-draft brief with Gemini |
+| `POST` | `/api/ai/complaint` | Return structured complaint-resolution guidance, using Gemini when configured |
+
+## BridgeBuddy browser extension
+
+The source is in `extension/`. In Chrome or another Chromium browser, open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked**, and select this project's `extension` folder. Click the BridgeBuddy toolbar icon to open the side panel. The extension connects to the production app at `https://creator-bridge-eight.vercel.app`; it falls back to a local API at `http://localhost:8787` when available. If the production URL changes, update `API_PRODUCTION` in `extension/sidepanel.js` and the production host in `extension/manifest.json`.
+
+BridgeBuddy can run in guided-demo mode without a Gemini key. For Gemini-powered responses, configure `GEMINI_API_KEY` on the API deployment and redeploy. The extension keeps chat only in panel memory; choosing **Attach this page** shares only the active tab's title and URL with the API. It never reads page contents.
 
 Briefs are shared by the demo API and there is no login or per-user access control yet. Use sample data for the public demo; add authentication before using real client or creator data.
 
@@ -55,7 +64,7 @@ Keep API fields stable while working in parallel. Use the endpoint table above a
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvu241fa04869-collab%2FCreator-Bridge)
 
-Import the repository with its root directory (`.`). The included `vercel.json` selects the Other preset and builds the frontend into `public/`. The catch-all Node function in `api/[...path].js` forwards API requests through Express. Add `GEMINI_API_KEY` in the Vercel project's Environment Variables to enable AI brief generation. Add `MONGODB_URI` for persistent briefs; without MongoDB, demo briefs are kept only in the running function instance and may disappear after a cold start. The creator profiles remain sample data.
+Import the repository with its root directory (`.`). The included `vercel.json` selects the Other preset, builds the frontend into `public/`, and deploys `api/[...path].js` as the Express API function. Add `GEMINI_API_KEY` in the Vercel project's Environment Variables to enable real AI brief and complaint responses. Add `MONGODB_URI` for persistent briefs; without MongoDB, demo briefs are kept only in the running function instance and may disappear after a cold start. The creator profiles remain sample data.
 
 ### One service on Render
 
@@ -82,3 +91,4 @@ The source repository is [vu241fa04869-collab/Creator-Bridge](https://github.com
 - `server/src/models/` — MongoDB schemas.
 - `server/data/creators.json` — clearly labeled demo seed data.
 - `server/.env.example` — environment variable template.
+

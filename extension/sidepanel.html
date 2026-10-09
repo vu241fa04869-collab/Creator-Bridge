@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#132b24" />
+    <title>BridgeBuddy · CreatorBridge</title>
+    <link rel="stylesheet" href="sidepanel.css" />
+    <script src="sidepanel.js" defer></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="https://creator-bridge-eight.vercel.app/" target="_blank" rel="noreferrer">
+          <span class="brand-mark">B<span>✳</span></span>
+          <span><strong>BridgeBuddy</strong><small>by CreatorBridge</small></span>
+        </a>
+        <button id="new-chat" class="icon-button" type="button" aria-label="Start a new chat" title="New chat">↺</button>
+      </header>
+
+      <section class="intro">
+        <div class="eyebrow"><span></span> YOUR COMPLAINT, MADE CLEARER</div>
+        <h1>Let’s find a fair <em>way forward.</em></h1>
+        <p>Share what happened. Get a grounded plan and a message you can edit before sending.</p>
+        <button id="attach-page" class="attach-button" type="button"><span>＋</span> Attach this page</button>
+        <p id="page-context" class="context-status" aria-live="polite">Nothing from this page is attached.</p>
+      </section>
+
+      <div class="safety-note"><span>⌑</span><p>Keep passwords, payment details, and IDs out of the chat. Your conversation stays in this panel and is not saved by the extension.</p></div>
+
+      <section class="conversation" id="messages" aria-live="polite" aria-label="BridgeBuddy conversation">
+        <article class="message assistant">
+          <span class="avatar">B</span>
+          <div class="bubble"><span class="speaker">BRIDGEBUDDY</span><p>Hi. What happened, and what would feel like a fair outcome to you?</p></div>
+        </article>
+      </section>
+
+      <div class="quick-prompts" id="suggestions">
+        <button type="button" data-prompt="A delivery is late and I have not received an update. Help me ask for a realistic plan.">Late delivery</button>
+        <button type="button" data-prompt="I was charged but the refund has not arrived. Help me request a clear update.">Refund stuck</button>
+        <button type="button" data-prompt="The work does not match the agreed brief. Help me ask for a reasonable revision.">Scope mismatch</button>
+      </div>
+
+      <form class="composer" id="chat-form">
+        <label class="sr-only" for="message-input">Describe your complaint</label>
+        <textarea id="message-input" maxlength="3000" rows="2" placeholder="Tell me what happened…" required></textarea>
+        <div class="composer-bottom"><span id="char-count">0 / 3,000</span><button id="send-button" type="submit" aria-label="Send message">↑</button></div>
+      </form>
+      <footer class="footer"><span id="connection-state"><i></i> Connecting to CreatorBridge</span><a href="https://creator-bridge-eight.vercel.app/" target="_blank" rel="noreferrer">Open marketplace ↗</a></footer>
+    </main>
+  </body>
+</html>
+

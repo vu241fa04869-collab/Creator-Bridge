@@ -9,10 +9,11 @@
     <title>CreatorBridge AI — Find your next creative partner</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/app.css" />
     <link rel="stylesheet" href="/ai.css" />
     <link rel="stylesheet" href="/portfolio.css" />
+    <link rel="stylesheet" href="/studio.css" />
     <script src="/app.js" defer></script>
   </head>
   <body>
@@ -26,13 +27,14 @@
         <nav class="side-nav">
           <button class="nav-item is-active" data-view="explore"><span class="nav-icon">⌕</span> Explore creators</button>
           <button class="nav-item" data-view="briefs"><span class="nav-icon">▤</span> My briefs <span class="nav-count" id="brief-count">0</span></button>
+          <button class="nav-item" data-view="complaints"><span class="nav-icon">◉</span> Resolution studio</button>
         </nav>
         <div class="sidebar-divider"></div>
-        <div class="sidebar-note">
+          <div class="sidebar-note">
           <span class="note-icon">✦</span>
-          <strong>Make something<br />people remember.</strong>
-          <p>Find the right AI creative partner for your next campaign.</p>
-          <button class="text-link" id="sidebar-create">Create a brief <span>↗</span></button>
+            <strong>Make it right.<br />Then make it memorable.</strong>
+            <p>Find creative partners and resolve project friction with a calmer next step.</p>
+            <button class="text-link" id="sidebar-create">Start a brief <span>↗</span></button>
         </div>
         <div class="sidebar-footer"><span class="avatar avatar-small avatar-purple">BB</span><span><strong>BYTE BLAST</strong><small>HackXLerate 2026</small></span><span class="more">···</span></div>
       </aside>
@@ -40,7 +42,7 @@
       <main class="main-content">
         <header class="topbar">
           <div class="breadcrumb"><span>Workspace</span><span class="crumb-sep">/</span><strong id="breadcrumb-current">Explore creators</strong></div>
-          <div class="top-actions"><span class="live-dot"></span><span class="demo-label">DEMO MODE</span><button class="top-avatar" aria-label="Team BYTE BLAST">BB</button></div>
+          <div class="top-actions"><span class="service-indicator" id="service-indicator"><i></i><span>Connecting</span></span><button class="top-help-button" id="open-complaint-studio"><span>✳</span> Resolve an issue</button><button class="top-avatar" aria-label="Team BYTE BLAST">BB</button></div>
         </header>
 
         <section id="explore-view" class="view">
@@ -82,7 +84,41 @@
           <div class="page-heading compact-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> YOUR CAMPAIGNS</div><h1>Campaign <span>briefs.</span></h1><p class="heading-copy">Keep every creative idea moving forward.</p></div><button class="button button-primary" id="create-brief-list"><span>＋</span> New brief</button></div>
           <div id="brief-list" class="brief-list"></div>
         </section>
-        <footer class="page-footer"><span>CreatorBridge AI <span class="footer-dot">✳</span> Built for creative collaboration</span><span>HACKXLERATE 2026 · BYTE BLAST</span></footer>
+        <section id="complaints-view" class="view hidden" aria-labelledby="complaint-title">
+          <div class="complaint-hero">
+            <div class="complaint-hero-copy">
+              <div class="eyebrow"><span class="eyebrow-line"></span> THE RESOLUTION STUDIO</div>
+              <p class="hero-kicker">A little clarity can change the whole conversation.</p>
+              <h1 id="complaint-title">Let’s find a fair<br /><em>way forward.</em></h1>
+              <p class="heading-copy">Tell BridgeBuddy what happened. Get a calm plan, the right next question, and a message you can make your own.</p>
+            </div>
+            <div class="hero-orbit" aria-hidden="true"><span class="orbit-ring ring-one"></span><span class="orbit-ring ring-two"></span><span class="orbit-core">✳</span><span class="orbit-spark spark-one">✦</span><span class="orbit-spark spark-two">·</span><span class="orbit-label">CLEAR<br />NEXT STEP</span></div>
+          </div>
+          <div class="complaint-layout">
+            <aside class="resolution-aside">
+              <div class="aside-heading"><span class="aside-index">01 — START HERE</span><h2>What’s going on?</h2><p>Pick a starting point or just tell the story in your own words.</p></div>
+              <div class="scenario-list">
+                <button class="scenario-card" data-scenario="Payment or refund" data-message="I need help resolving a payment or refund issue. Here is what happened: "><span class="scenario-icon icon-coral">↗</span><span><strong>Payment or refund</strong><small>A charge, payout, or refund is stuck</small></span><span class="scenario-arrow">↗</span></button>
+                <button class="scenario-card" data-scenario="Scope or quality" data-message="I need help with a project scope or quality concern. We agreed to: "><span class="scenario-icon icon-lilac">◫</span><span><strong>Scope or quality</strong><small>The delivered work differs from the agreement</small></span><span class="scenario-arrow">↗</span></button>
+                <button class="scenario-card" data-scenario="Delayed or missing service" data-message="I need help with a delayed or missing delivery. The expected date was: "><span class="scenario-icon icon-mint">⌁</span><span><strong>Late or missing delivery</strong><small>A deadline passed or an update is missing</small></span><span class="scenario-arrow">↗</span></button>
+                <button class="scenario-card" data-scenario="Communication" data-message="I need help resolving a communication issue. I have tried to contact them by: "><span class="scenario-icon icon-sand">◎</span><span><strong>Communication</strong><small>It’s hard to get a clear response</small></span><span class="scenario-arrow">↗</span></button>
+                <button class="scenario-card" data-scenario="Rights or policy" data-message="I need help with a usage-rights or policy concern. The work or agreement is: "><span class="scenario-icon icon-blue">⌘</span><span><strong>Rights or policy</strong><small>Usage, credit, or platform rules are unclear</small></span><span class="scenario-arrow">↗</span></button>
+              </div>
+              <div class="resolution-principles"><span class="principle-mark">✳</span><div><strong>Facts first. Fairness always.</strong><p>BridgeBuddy helps you organize the issue and communicate clearly. You decide what to send.</p></div></div>
+            </aside>
+            <section class="complaint-chat" aria-label="BridgeBuddy complaint resolver">
+              <header class="chat-header"><div class="bot-avatar">B<span>✳</span></div><div class="bot-heading"><strong>BridgeBuddy</strong><span><i class="bot-online"></i><span id="complaint-mode">Resolution guide · private session</span></span></div><button class="chat-reset" id="clear-complaint-chat" type="button" title="Clear this conversation">↺ <span>New chat</span></button></header>
+              <div class="chat-scroll" id="complaint-messages" aria-live="polite" aria-label="Conversation">
+                <div class="chat-date">TODAY · YOUR SESSION IS NOT SAVED</div>
+                <article class="chat-message assistant-message"><div class="message-avatar">B</div><div class="message-content"><span class="speaker-label">BRIDGEBUDDY <span>JUST NOW</span></span><p>Hi, I’m here to help you move a tough situation toward a clear next step. What happened, and what outcome would feel fair to you?</p><small>You can keep names and account details out of it.</small></div></article>
+              </div>
+              <div class="chat-suggestions" id="complaint-suggestions"><button type="button" data-prompt="A creator missed the delivery date and I haven’t received an update. I want a realistic delivery plan.">Late delivery</button><button type="button" data-prompt="I was charged but the refund hasn’t arrived. Help me write a clear request.">Refund stuck</button><button type="button" data-prompt="The final work doesn’t match the agreed brief. I want to ask for a reasonable revision.">Scope mismatch</button></div>
+              <form class="chat-composer" id="complaint-form"><label class="sr-only" for="complaint-input">Describe your complaint</label><textarea id="complaint-input" maxlength="3000" rows="1" placeholder="Tell me what happened…" required></textarea><div class="composer-footer"><span class="privacy-note"><span>⌑</span> Don’t include passwords, payment details, or IDs.</span><span class="composer-tools"><span id="complaint-char-count">0 / 3,000</span><button type="submit" id="complaint-send" aria-label="Send complaint">↑</button></span></div></form>
+              <div class="chat-footnote">Guidance is a starting point, not a legal decision. Review every draft before sending.</div>
+            </section>
+          </div>
+        </section>
+        <footer class="page-footer"><span>CreatorBridge AI <span class="footer-dot">✳</span> Built for creative collaboration</span><span>HACKXLERATE 2026 · BYTE BLAST <b>·</b> BRIDGEBUDDY</span></footer>
       </main>
     </div>
 
@@ -92,3 +128,4 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </body>
 </html>
+

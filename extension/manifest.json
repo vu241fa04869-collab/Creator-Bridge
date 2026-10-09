@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "BridgeBuddy by CreatorBridge",
+  "version": "1.0.0",
+  "description": "A calm AI guide for turning everyday complaints into a fair next step.",
+  "permissions": ["activeTab", "sidePanel", "storage"],
+  "host_permissions": [
+    "https://creator-bridge-eight.vercel.app/*",
+    "http://localhost:8787/*"
+  ],
+  "background": { "service_worker": "service-worker.js" },
+  "action": { "default_title": "Open BridgeBuddy" },
+  "side_panel": { "default_path": "sidepanel.html" }
+}
+
