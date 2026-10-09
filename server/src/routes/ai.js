@@ -83,7 +83,7 @@ router.post("/brief", async (req, res) => {
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { responseFormat: { text: { mimeType: "application/json", schema: responseSchema } }, temperature: 0.3 }
+        generationConfig: { responseFormat: { text: { mimeType: "APPLICATION_JSON", schema: responseSchema } }, temperature: 0.3 }
       }),
       signal: AbortSignal.timeout(45000)
     });
@@ -127,7 +127,7 @@ router.post("/complaint", async (req, res) => {
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: instructions }] },
         contents: [...history, { role: "user", parts: [{ text: latestContent }] }],
-        generationConfig: { responseFormat: { text: { mimeType: "application/json", schema: complaintSchema } }, temperature: 0.35 }
+        generationConfig: { responseFormat: { text: { mimeType: "APPLICATION_JSON", schema: complaintSchema } }, temperature: 0.35 }
       }),
       signal: AbortSignal.timeout(45000)
     });
