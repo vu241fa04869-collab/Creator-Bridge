@@ -53,7 +53,7 @@ Keep API fields stable while working in parallel. Use the endpoint table above a
 
 ### One service on Render
 
-This is the simplest deployment. Connect the GitHub repository to Render as a Node web service, use the repository root as the root directory, set the build command to `npm install && npm run build`, and the start command to `npm start`. The Express server serves the built frontend and the API from the same origin. Configure `MONGODB_URI` and `GEMINI_API_KEY` in the Render environment settings; `GEMINI_MODEL` is optional. Add a `/api/health` health check path if desired.
+This is the simplest deployment. The repository includes a `render.yaml` Blueprint for a single Node web service. In Render, create a Blueprint from the GitHub repo and review the service before deploying. The Express server serves the built frontend and API from the same origin; the service uses `/api/health` for its health check. Add `MONGODB_URI` and `GEMINI_API_KEY` in Render's environment settings for persistent briefs and live AI generation. `GEMINI_MODEL` defaults to `gemini-3.8-flash`.
 
 ### Vercel frontend + Render API
 
