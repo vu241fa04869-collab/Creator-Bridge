@@ -11,7 +11,9 @@ const creatorsPath = resolve(dataDir, "creators.json");
 const portfoliosPath = resolve(dataDir, "portfolios.json");
 const briefsPath = resolve(dataDir, "briefs.json");
 let mongoReady = false;
-export const databaseMode = () => mongoReady ? "mongodb" : "local-json";
+const isServerless = process.env.VERCEL === "1";
+const ephemeralBriefs = [];
+export const databaseMode = () => mongoReady ? "mongodb" : (isServerless ? "ephemeral" : "local-json");
 
 async function readArray(path) {
   try { const parsed = JSON.parse(await readFile(path, "utf8")); return Array.isArray(parsed) ? parsed : []; }
@@ -103,7 +105,8 @@ export async function getCreator(id) {
 
 export async function listBriefs() {
   if (mongoReady) return (await CampaignBrief.find().sort({ createdAt: -1 }).lean()).map(serializeBrief);
-  return (await readArray(briefsPath)).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(serializeBrief);
+  const rows = isServerless ? [...ephemeralBriefs] : await readArray(briefsPath);
+  return rows.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(serializeBrief);
 }
 
 export async function createBrief(input) {
@@ -121,9 +124,9 @@ export async function createBrief(input) {
     status: "Draft"
   };
   if (mongoReady) return serializeBrief(await CampaignBrief.create(normalized));
-  const rows = await readArray(briefsPath);
+  const rows = isServerless ? ephemeralBriefs : await readArray(briefsPath);
   const saved = { ...normalized, id: `brief-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, createdAt: new Date().toISOString() };
   rows.push(saved);
-  await writeBriefs(rows);
+  if (!isServerless) await writeBriefs(rows);
   return serializeBrief(saved);
 }
