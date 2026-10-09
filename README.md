@@ -59,7 +59,7 @@ This is the simplest deployment. Connect the GitHub repository to Render as a No
 
 For separate services, set the Vercel root directory to `client`, build command to `npm run build`, and output directory to `dist`. Set `VITE_API_URL` to the Render API base URL. Deploy the API from the repository root on Render with build command `npm install` and start command `npm run start:api`. Add the Vercel site URL to `CORS_ALLOWED_ORIGINS` on Render. Set `MONGODB_URI` and `GEMINI_API_KEY` on the API service.
 
-Before sharing the live URL, verify creator filters, profile details, creating and reopening a brief, and the AI draft flow with the deployment's actual keys. Do not commit `.env` or API keys. The code is prepared for deployment, but creating the GitHub repository and publishing the service requires your team's hosting accounts and credentials.
+The source repository is [vu241fa04869-collab/Creator-Bridge](https://github.com/vu241fa04869-collab/Creator-Bridge). Before sharing the live URL, verify creator filters, profile details, creating and reopening a brief, and the AI draft flow with the deployment's actual keys. Do not commit `.env` or API keys. Publishing the service requires a hosting account and the server environment secrets.
 
 ## Suggested demo run-through
 
@@ -76,3 +76,4 @@ Before sharing the live URL, verify creator filters, profile details, creating a
 - `server/src/models/` — MongoDB schemas.
 - `server/data/creators.json` — clearly labeled demo seed data.
 - `server/.env.example` — environment variable template.
+
