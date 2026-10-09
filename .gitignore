@@ -1,5 +1,6 @@
 node_modules/
 client/dist/
+public/
 server/.env
 server/data/briefs.json*
 .env
