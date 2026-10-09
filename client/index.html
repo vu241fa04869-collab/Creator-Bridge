@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f6f7fb" />
+    <meta name="description" content="Discover AI creators and build campaign briefs with CreatorBridge." />
+    <meta name="api-base" content="__VITE_API_URL__" />
+    <title>CreatorBridge AI — Find your next creative partner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/app.css" />
+    <link rel="stylesheet" href="/ai.css" />
+    <link rel="stylesheet" href="/portfolio.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Main navigation">
+        <a class="brand" href="#explore" aria-label="CreatorBridge home">
+          <span class="brand-mark">✳</span>
+          <span>creator<span class="brand-accent">bridge</span><small>AI MARKETPLACE</small></span>
+        </a>
+        <div class="workspace-label">WORKSPACE</div>
+        <nav class="side-nav">
+          <button class="nav-item is-active" data-view="explore"><span class="nav-icon">⌕</span> Explore creators</button>
+          <button class="nav-item" data-view="briefs"><span class="nav-icon">▤</span> My briefs <span class="nav-count" id="brief-count">0</span></button>
+        </nav>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-note">
+          <span class="note-icon">✦</span>
+          <strong>Make something<br />people remember.</strong>
+          <p>Find the right AI creative partner for your next campaign.</p>
+          <button class="text-link" id="sidebar-create">Create a brief <span>↗</span></button>
+        </div>
+        <div class="sidebar-footer"><span class="avatar avatar-small avatar-purple">BB</span><span><strong>BYTE BLAST</strong><small>HackXLerate 2026</small></span><span class="more">···</span></div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div class="breadcrumb"><span>Workspace</span><span class="crumb-sep">/</span><strong id="breadcrumb-current">Explore creators</strong></div>
+          <div class="top-actions"><span class="live-dot"></span><span class="demo-label">DEMO MODE</span><button class="top-avatar" aria-label="Team BYTE BLAST">BB</button></div>
+        </header>
+
+        <section id="explore-view" class="view">
+          <div class="page-heading">
+            <div>
+              <div class="eyebrow"><span class="eyebrow-line"></span> THE CREATOR MARKETPLACE</div>
+              <h1>Find your next<br /><span>creative partner.</span></h1>
+              <p class="heading-copy">Explore AI creator profiles, review sample concepts, and turn a campaign idea into a clear brief.</p>
+            </div>
+            <button class="button button-primary heading-cta" id="create-brief-top"><span>＋</span> Create a brief</button>
+          </div>
+
+          <div class="metrics-row">
+            <div class="metric"><span class="metric-icon lilac">✳</span><span><strong>08</strong><small>DEMO PROFILES</small></span></div>
+            <div class="metric"><span class="metric-icon mint">◇</span><span><strong>16</strong><small>CONCEPT SAMPLES</small></span></div>
+            <div class="metric"><span class="metric-icon peach">↗</span><span><strong>AI</strong><small>BRIEF STARTER</small></span></div>
+            <div class="metric-note"><span class="sparkle">✦</span> Thoughtful work, made with AI.</div>
+          </div>
+
+          <div class="discovery-title-row">
+            <div><h2>Explore creators <span class="result-count" id="result-count">8</span></h2><p>Find the right talent for every kind of idea.</p></div>
+            <label class="sort-control">Sort by <select id="sort-select" aria-label="Sort creators"><option value="featured">Featured</option><option value="name">Name A–Z</option><option value="projects">Most projects</option></select></label>
+          </div>
+
+          <div class="discovery-layout">
+            <section class="filter-panel" aria-label="Creator filters">
+              <div class="filter-top"><strong>Filters</strong><button id="clear-filters" class="clear-button">Clear all</button></div>
+              <label class="search-field"><span>⌕</span><input id="search-input" type="search" placeholder="Name, skill, or tool..." aria-label="Search creators" /></label>
+              <div class="filter-group"><label for="specialty-filter">SPECIALTY</label><select id="specialty-filter"><option value="">All specialties</option></select></div>
+              <div class="filter-group"><label for="tool-filter">AI TOOL</label><select id="tool-filter"><option value="">All tools</option></select></div>
+              <div class="filter-group"><label for="type-filter">CONTENT TYPE</label><select id="type-filter"><option value="">All content types</option></select></div>
+              <div class="filter-tip"><span>✦</span><p><strong>Not sure where to start?</strong><br />Create a campaign brief and let your requirements guide your search.</p></div>
+            </section>
+            <div class="creator-grid" id="creator-grid" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <section id="briefs-view" class="view hidden">
+          <div class="page-heading compact-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> YOUR CAMPAIGNS</div><h1>Campaign <span>briefs.</span></h1><p class="heading-copy">Keep every creative idea moving forward.</p></div><button class="button button-primary" id="create-brief-list"><span>＋</span> New brief</button></div>
+          <div id="brief-list" class="brief-list"></div>
+        </section>
+        <footer class="page-footer"><span>CreatorBridge AI <span class="footer-dot">✳</span> Built for creative collaboration</span><span>HACKXLERATE 2026 · BYTE BLAST</span></footer>
+      </main>
+    </div>
+
+    <div class="modal-backdrop hidden" id="modal-backdrop" role="presentation">
+      <section class="modal" id="modal-content" role="dialog" aria-modal="true" aria-labelledby="modal-title"></section>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

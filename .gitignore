@@ -1,0 +1,6 @@
+node_modules/
+client/dist/
+server/.env
+server/data/briefs.json*
+.env
+.DS_Store
