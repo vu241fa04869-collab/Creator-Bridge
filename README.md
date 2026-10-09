@@ -51,6 +51,12 @@ Keep API fields stable while working in parallel. Use the endpoint table above a
 
 ## Deployment
 
+### One-service Vercel deployment
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvu241fa04869-collab%2FCreator-Bridge)
+
+Import the repository with its root directory (`.`). The included `vercel.json` builds the frontend into `public/`, and the root `index.js` exposes the Express API as a Vercel Function. Add `GEMINI_API_KEY` in the Vercel project's Environment Variables to enable AI brief generation. Add `MONGODB_URI` for persistent briefs; without MongoDB, demo briefs are kept only in the running function instance and may disappear after a cold start. The creator profiles remain sample data.
+
 ### One service on Render
 
 This is the simplest deployment. The repository includes a `render.yaml` Blueprint for a single Node web service. In Render, create a Blueprint from the GitHub repo and review the service before deploying. The Express server serves the built frontend and API from the same origin; the service uses `/api/health` for its health check. Add `MONGODB_URI` and `GEMINI_API_KEY` in Render's environment settings for persistent briefs and live AI generation. `GEMINI_MODEL` defaults to `gemini-3.8-flash`.
@@ -76,4 +82,3 @@ The source repository is [vu241fa04869-collab/Creator-Bridge](https://github.com
 - `server/src/models/` — MongoDB schemas.
 - `server/data/creators.json` — clearly labeled demo seed data.
 - `server/.env.example` — environment variable template.
-
