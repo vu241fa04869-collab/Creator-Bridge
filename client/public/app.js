@@ -38,6 +38,56 @@ async function apiRequest(path, options = {}) {
 
 function escapeHtml(value=""){return String(value).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));}
 function unique(items){return [...new Set(items)].sort((a,b)=>a.localeCompare(b));}
+const matchDirections = [
+  { label: "film & motion", request: /film|video|cinematic|motion|animation|runway|camera|short[- ]form/, profile: /film|video|motion|animation|cinematic|runway|editing|storyboard/ },
+  { label: "product storytelling", request: /product|launch|packaging|object|render|unboxing/, profile: /product|render|packaging|still life|lighting|compositing/ },
+  { label: "brand worlds", request: /brand|identity|visual system|campaign|logo/, profile: /brand|art direction|visual world|campaign|identity|packaging/ },
+  { label: "social storytelling", request: /social|reel|instagram|creator|copy|storytelling|audience/, profile: /social|short-form|story|storyboard|copywriting|audience/ },
+  { label: "fashion & editorial", request: /fashion|editorial|styling|wardrobe|apparel/, profile: /fashion|editorial|styling|apparel|material|movement/ },
+  { label: "lifestyle imagery", request: /lifestyle|daily|home|food|people|wellness|natural|runner|running/, profile: /lifestyle|photography|retouch|fashion|people|motion|story/ },
+  { label: "3D & immersive", request: /\b3d\b|render|surreal|immersive|world/, profile: /\b3d\b|render|blender|product universe|texture/ }
+];
+const typeFamilies = {
+  video: ["video", "reel", "motion"], social: ["social", "reel"],
+  "product visuals": ["product", "branding"], campaign: ["campaign", "social", "video"],
+  branding: ["branding", "campaign"], editorial: ["editorial", "fashion"]
+};
+function briefFitMatches(brief) {
+  const idea = `${brief.idea || ""} ${brief.style || ""}`.toLowerCase();
+  const requestedTools = unique(creators.flatMap(creator => creator.tools)).filter(tool => idea.includes(tool.toLowerCase()));
+  const requestedDirections = matchDirections.filter(direction => direction.request.test(idea));
+  const requestedType = String(brief.type || brief.contentType || "").trim().toLowerCase();
+  const families = typeFamilies[requestedType] || [requestedType];
+  const hasBudget = Number.isFinite(Number(brief.budget)) && Number(brief.budget) > 0;
+  return creators.map(creator => {
+    const profile = [creator.specialty, creator.bio, creator.workflow, ...(creator.skills || []), ...(creator.types || []), ...(creator.tools || [])].join(" ").toLowerCase();
+    const dimensions = [];
+    if (requestedType) {
+      const creatorTypes = (creator.types || []).map(type => type.toLowerCase());
+      const formatScore = creatorTypes.some(type => families.some(family => type.includes(family))) ? 100 : 24;
+      dimensions.push({ weight: 35, score: formatScore, reason: formatScore === 100 ? `${brief.type || brief.contentType} format` : "Adjacent format" });
+    }
+    if (requestedTools.length) {
+      const matches = requestedTools.filter(tool => (creator.tools || []).some(ownTool => ownTool.toLowerCase() === tool.toLowerCase()));
+      const score = matches.length === requestedTools.length ? 100 : matches.length ? 58 : 0;
+      dimensions.push({ weight: 25, score, reason: matches.length ? `Workflow uses ${matches.join(" + ")}` : "No named tool overlap" });
+    }
+    if (requestedDirections.length) {
+      const matched = requestedDirections.filter(direction => direction.profile.test(profile));
+      const score = Math.round((matched.length / requestedDirections.length) * 100);
+      dimensions.push({ weight: 30, score, reason: matched.length ? `Creative overlap: ${matched.map(item => item.label).join(", ")}` : "Creative direction is less aligned" });
+    }
+    if (hasBudget) {
+      const budget = Number(brief.budget);
+      const score = creator.rate <= budget ? 100 : Math.max(0, Math.round(100 - ((creator.rate - budget) / budget) * 100));
+      dimensions.push({ weight: 10, score, reason: score === 100 ? "Within illustrative sample rate" : "Above illustrative sample rate" });
+    }
+    const totalWeight = dimensions.reduce((sum, item) => sum + item.weight, 0);
+    const score = totalWeight ? Math.round(dimensions.reduce((sum, item) => sum + item.score * item.weight, 0) / totalWeight) : 50;
+    const reasons = dimensions.filter(item => item.score >= 58).map(item => item.reason);
+    return { creator, score, reasons: reasons.slice(0, 3) };
+  }).sort((a, b) => b.score - a.score || a.creator.name.localeCompare(b.creator.name)).slice(0, 3);
+}
 function populateFilters(){
   const groups=[["#specialty-filter",unique(creators.map(c=>c.specialty))],["#tool-filter",unique(creators.flatMap(c=>c.tools))],["#type-filter",unique(creators.flatMap(c=>c.types))]];
   groups.forEach(([selector,values])=>values.forEach(value=>$(selector).insertAdjacentHTML("beforeend",`<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`)));
@@ -75,9 +125,9 @@ function profileModal(id){
 function saveBriefs(rows){localStorage.setItem("creatorbridge-briefs",JSON.stringify(rows));if(remoteBriefs!==null)remoteBriefs=rows;updateBriefCount();}
 async function refreshRemoteBriefs(){try{remoteBriefs=await apiRequest("/api/briefs");localStorage.setItem("creatorbridge-briefs",JSON.stringify(remoteBriefs));}catch{remoteBriefs=null;}updateBriefCount();}
 function updateBriefCount(){$("#brief-count").textContent=briefs().length;}
-function openBriefForm(creatorId=""){
+function openBriefForm(creatorId="",options={}){
   const c=creatorId?byId(creatorId):null;
-  showModal(`<div class="modal-head"><div><h2 id="modal-title">Create a campaign brief</h2><p>Set the direction. Your creator brings it to life.</p></div><button class="close-modal" data-close aria-label="Close">×</button></div>
+  showModal(`<div class="modal-head"><div><h2 id="modal-title">${options.demo?"From one idea to a short list":"Create a campaign brief"}</h2><p>${options.demo?"A 20-second launch film · sample matching walkthrough":"Set the direction. Your creator brings it to life."}</p></div><button class="close-modal" data-close aria-label="Close">×</button></div>
     <form id="brief-form" class="modal-content"><div class="ai-assist"><div class="ai-assist-head"><span class="ai-star">✦</span><span><strong>AI brief starter</strong><small>Turn a rough idea into an editable campaign draft.</small></span></div><textarea id="ai-idea" placeholder="e.g. A launch film for a new running shoe that feels energetic and optimistic"></textarea><div class="ai-assist-actions"><span id="ai-status" role="status">Uses the server-side Gemini API key.</span><button class="button button-secondary" id="generate-ai" type="button">Generate draft ✦</button></div></div><div class="form-grid">
       <div class="form-field full"><label for="brief-title">Campaign title *</label><input id="brief-title" name="title" required placeholder="e.g. Summer launch film" /></div>
       <div class="form-field"><label for="brand-name">Brand or team *</label><input id="brand-name" name="brand" required value="BYTE BLAST" placeholder="Your brand" /></div>
@@ -88,9 +138,31 @@ function openBriefForm(creatorId=""){
       <div class="form-field"><label for="brief-budget">Budget (₹)</label><input id="brief-budget" name="budget" type="number" min="0" placeholder="Optional" /></div>
       <div class="form-field"><label for="brief-deadline">Target deadline</label><input id="brief-deadline" name="deadline" type="date" /></div>
       <div class="form-field full"><label class="check-field"><input name="commercial" type="checkbox" /> Commercial usage rights are required</label></div>
-      ${c?`<input name="creator" type="hidden" value="${c.id}" />`:""}
-    </div><div class="form-actions"><button class="button button-secondary" type="button" data-close>Cancel</button><button class="button button-primary" type="submit">Save brief <span>↗</span></button></div></form>`);
+      <input name="creator" type="hidden" value="${c?.id||""}" />
+    </div><section class="match-preview" id="match-preview" aria-live="polite"></section><div class="form-actions"><button class="button button-secondary" type="button" data-close>Cancel</button><button class="button button-primary" type="submit">Save brief <span>↗</span></button></div></form>`);
+  if(options.demo){
+    $("#brief-title").value="City after rain · launch film";
+    $("#brand-name").value="Monsoon Running · demo";
+    $("#brief-type").value="Video";
+    $("#brief-style").value="Cinematic, hopeful, fast-moving; rain into sunrise.";
+    $("#brief-idea").value="Create a 20-second vertical launch film for a sustainable running jacket. Follow a city runner through Mumbai monsoon rain into a bright sunrise. Make it cinematic and optimistic for Instagram Reels; use Runway and DaVinci Resolve for AI-assisted footage and editorial finishing.";
+    $("#ai-idea").value="A short cinematic, optimistic launch film for a sustainable running jacket, following a runner through monsoon rain into sunrise. Made for Instagram Reels.";
+  }
+  $("#brief-form").addEventListener("input",renderMatchPreview);
+  $("#brief-form").addEventListener("change",renderMatchPreview);
+  if(options.demo||c)renderMatchPreview();
 $("#brief-title").focus();
+}
+function renderMatchPreview(){
+  const form=$("#brief-form"),host=$("#match-preview");if(!form||!host)return;
+  const fields=new FormData(form),brief={idea:fields.get("idea"),style:fields.get("style"),type:fields.get("type"),budget:fields.get("budget")};
+  const selected=String(fields.get("creator")||"");
+  const results=briefFitMatches(brief);
+  if(!brief.idea?.trim()&&!brief.type&&!brief.style){host.innerHTML="";return;}
+  host.innerHTML=`<div class="match-results-head"><div><span class="match-eyebrow">CREATORBRIDGE MATCH EXPLAINER</span><h3>Three creators to explore</h3><p>Based on the format, tools, and creative direction in this brief.</p></div><button class="button button-match" id="find-matches" type="button">Refresh matches <span>↻</span></button></div><div class="match-method"><span>01 · Format</span><span>02 · Named tools</span><span>03 · Creative direction</span>${brief.budget?"<span>04 · Sample rate</span>":""}</div><div class="match-list">${results.map((item,index)=>{
+    const creator=item.creator,isSelected=selected===creator.id;
+    return `<article class="match-result-card${isSelected?" is-selected":""}"><span class="match-rank">0${index+1}</span><span class="match-avatar" style="--avatar:${creator.palette[0]};--ink:${creator.palette[1]}">${escapeHtml(creator.initials)}</span><div class="match-result-main"><div class="match-creator-line"><strong>${escapeHtml(creator.name)}</strong><span>${escapeHtml(creator.specialty)}</span></div><div class="match-reasons">${(item.reasons.length?item.reasons:["Related creative profile"]).map(reason=>`<span>${escapeHtml(reason)}</span>`).join("")}</div></div><div class="match-score"><strong>${item.score}%</strong><small>brief fit</small></div><button class="button button-select-match${isSelected?" selected":""}" type="button" data-select-match="${creator.id}" aria-pressed="${isSelected}">${isSelected?"Selected ✓":"Choose"}</button></article>`;
+  }).join("")}</div><p class="match-disclaimer">A transparent rules-based estimate, not an AI decision or guarantee. Demo profiles and rates are illustrative and unverified; confirm fit and pricing with creators.</p>`;
 }
 function renderBriefs(){
   const items=briefs(), host=$("#brief-list");
@@ -175,9 +247,14 @@ document.querySelectorAll("[data-scenario]").forEach(button=>button.addEventList
 document.querySelectorAll("#complaint-suggestions [data-prompt]").forEach(button=>button.addEventListener("click",()=>{const input=$("#complaint-input");input.value=button.dataset.prompt;$("#complaint-char-count").textContent=`${input.value.length} / 3,000`;$("#complaint-form").requestSubmit();}));
 $("#creator-grid").addEventListener("click",event=>{const button=event.target.closest("[data-profile]");if(button)profileModal(button.dataset.profile)});
 $("#create-brief-top").addEventListener("click",()=>openBriefForm());$("#create-brief-list").addEventListener("click",()=>openBriefForm());$("#sidebar-create").addEventListener("click",()=>openBriefForm());
+$("#try-match-demo").addEventListener("click",()=>openBriefForm("",{demo:true}));
 backdrop.addEventListener("click",event=>{if(event.target===backdrop||event.target.closest("[data-close]"))closeModal();});
-modal.addEventListener("click",event=>{const invite=event.target.closest("[data-start-brief]");if(invite){const id=invite.dataset.startBrief;closeModal();openBriefForm(id);}});
+modal.addEventListener("click",event=>{
+  const invite=event.target.closest("[data-start-brief]");if(invite){const id=invite.dataset.startBrief;closeModal();openBriefForm(id);return;}
+  const choice=event.target.closest("[data-select-match]");if(choice){const field=$("#brief-form [name=creator]");if(field){field.value=choice.dataset.selectMatch;renderMatchPreview();notify(`${byId(choice.dataset.selectMatch)?.name||"Creator"} added to the brief.`);}return;}
+});
 modal.addEventListener("click",async event=>{
+  const matchButton=event.target.closest("#find-matches");if(matchButton){event.preventDefault();renderMatchPreview();return;}
   const button=event.target.closest("#generate-ai");if(!button)return;
   const idea=$("#ai-idea").value.trim(), status=$("#ai-status");if(!idea){status.textContent="Add a rough idea first.";return;}
   button.disabled=true;button.textContent="Generating…";status.textContent="Asking Gemini to shape your idea…";
@@ -185,7 +262,7 @@ modal.addEventListener("click",async event=>{
     const draft=await apiRequest("/api/ai/brief",{method:"POST",body:JSON.stringify({idea})});
     $("#brief-title").value=draft.title||"Campaign brief";$("#brief-type").value=draft.contentType||"Campaign";$("#brief-style").value=draft.style||"";$("#brief-ratio").value=draft.aspectRatio||"Flexible";
     $("#brief-idea").value=[draft.campaignObjective&&`Objective: ${draft.campaignObjective}`,draft.targetAudience&&`Audience: ${draft.targetAudience}`,draft.deliverables?.length&&`Deliverables: ${draft.deliverables.join(", ")}`,`Original idea: ${idea}`].filter(Boolean).join("\n\n");
-    event.target.querySelector('[name="commercial"]').checked=Boolean(draft.commercialUse);status.textContent="AI draft ready. Review and edit every field before saving.";$("#brief-title").focus();
+    event.target.querySelector('[name="commercial"]').checked=Boolean(draft.commercialUse);status.textContent="AI draft ready. Review and edit every field before saving.";renderMatchPreview();$("#brief-title").focus();
   }catch(error){status.textContent=error.message==="Failed to fetch"?"API offline — start the backend to use the AI brief builder.":error.message;}
   finally{button.disabled=false;button.textContent="Generate draft ✦";}
 });

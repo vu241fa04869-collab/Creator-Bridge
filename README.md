@@ -22,6 +22,7 @@ To enable real AI brief generation, set `GEMINI_API_KEY` in `server/.env`, resta
 
 - Creator discovery with combined search, specialty, AI tool, and content type filters.
 - Creator portfolio/profile views with listed skills, tools, workflow, and illustrative rates.
+- Brief-to-creator shortlist with three ranked candidates, visible reasons, and a selectable creator saved with the brief. The estimate is rules-based and uses only the brief's format, named tools, creative direction, and optional illustrative rates; it is not a claim of verified creator quality.
 - Campaign briefs with content type, style, aspect ratio, commercial usage, budget, deadline, and optional creator association.
 - Brief list and detail views, saved in MongoDB or the local JSON fallback.
 - Gemini structured-output endpoint that turns an idea into editable brief fields.
@@ -78,11 +79,12 @@ The source repository is [vu241fa04869-collab/Creator-Bridge](https://github.com
 
 ## Suggested demo run-through
 
-1. Search for a video creator and filter by Runway.
-2. Open a profile and show its workflow, tools, and unverified demo label.
-3. Start a brief from that profile; ask Gemini to structure a rough campaign idea.
-4. Edit the generated fields, save the brief, then reopen it from **My briefs**.
-5. Close by showing the working deployment and repository setup instructions.
+1. On **Explore creators**, click **Try the sample match** for a prefilled launch-film idea. This flow works even when no Gemini API key is configured.
+2. Review the three suggestions and the visible fit reasons. Change the content format or brief idea to show the shortlist update.
+3. Choose a creator, save the brief, and reopen it from **My briefs** to show the selection stayed with the campaign.
+4. Open the creator profile to show the listed tools, workflow, illustrative concepts, and unverified demo label.
+5. Optionally use the Gemini brief starter and BridgeBuddy complaint helper when the API key is configured; review all AI output before using it.
+6. State that fit scores are an explainable prototype estimate and that all sample profiles, portfolio concepts, and rates need creator confirmation.
 
 ## Project files
 
