@@ -134,6 +134,9 @@ router.post("/complaint", async (req, res) => {
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
       const providerMessage = payload?.error?.message || `HTTP ${response.status}`;
+      if (response.status === 429 || response.status === 503) {
+        return res.json({ ...guidedComplaintReply(message), source: "guided-demo", aiGenerated: false });
+      }
       return res.status(response.status === 429 ? 429 : 502).json({ error: `The complaint helper could not reply: ${providerMessage}` });
     }
     const output = payload?.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("");
