@@ -42,6 +42,7 @@ Brands often know the campaign they want but do not know which AI creator has th
 - [ ] Confirm `/api/health` reports MongoDB and AI as configured on the live server.
 - [ ] Replace sample creator identities, illustrative rates, and concept covers with approved creator information and work, or keep their demo labels visible.
 - [x] Publish the source to [Creator-Bridge on GitHub](https://github.com/vu241fa04869-collab/Creator-Bridge).
+- [ ] Connect the repository to Render using the included `render.yaml` Blueprint.
 - [ ] Deploy the app and paste the live site URL into the submission form.
 - [ ] Test search, combined filters, profile opening, brief generation, brief editing, saving, and reopening on the deployed site.
 - [ ] Open the deployed site in a clean browser session and make sure the API URL and CORS settings are correct.
