@@ -1,11 +1,12 @@
 import { defineConfig } from "vite";
-import { dirname } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const clientRoot = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   root: clientRoot,
+  build: { outDir: resolve(clientRoot, "..", "public"), emptyOutDir: true },
   plugins: [{
     name: "creatorbridge-api-base",
     transformIndexHtml(html) {
