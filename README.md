@@ -55,7 +55,7 @@ Keep API fields stable while working in parallel. Use the endpoint table above a
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvu241fa04869-collab%2FCreator-Bridge)
 
-Import the repository with its root directory (`.`). The included `vercel.json` builds the frontend into `public/`, and the root `index.js` exposes the Express API as a Vercel Function. Add `GEMINI_API_KEY` in the Vercel project's Environment Variables to enable AI brief generation. Add `MONGODB_URI` for persistent briefs; without MongoDB, demo briefs are kept only in the running function instance and may disappear after a cold start. The creator profiles remain sample data.
+Import the repository with its root directory (`.`). The included `vercel.json` builds the frontend into `public/`, and the root `app.js` exposes the Express API as a Vercel Function. Add `GEMINI_API_KEY` in the Vercel project's Environment Variables to enable AI brief generation. Add `MONGODB_URI` for persistent briefs; without MongoDB, demo briefs are kept only in the running function instance and may disappear after a cold start. The creator profiles remain sample data.
 
 ### One service on Render
 
