@@ -26,6 +26,7 @@
         <div class="workspace-label">WORKSPACE</div>
         <nav class="side-nav">
           <button class="nav-item is-active" data-view="explore"><span class="nav-icon">⌕</span> Explore creators</button>
+          <button class="nav-item" data-view="pulse"><span class="nav-icon">◷</span> Creator Pulse</button>
           <button class="nav-item" data-view="briefs"><span class="nav-icon">▤</span> My briefs <span class="nav-count" id="brief-count">0</span></button>
           <button class="nav-item" data-view="complaints"><span class="nav-icon">◉</span> Resolution studio</button>
         </nav>
@@ -49,15 +50,15 @@
           <div class="page-heading">
             <div>
               <div class="eyebrow"><span class="eyebrow-line"></span> THE CREATOR MARKETPLACE</div>
-              <h1>Find your next<br /><span>creative partner.</span></h1>
-              <p class="heading-copy">Explore AI creator profiles, review sample concepts, and turn a campaign idea into a clear brief.</p>
+              <h1>Great work starts with<br /><span>the right connection.</span></h1>
+              <p class="heading-copy">Meet independent AI creators, explore their concepts, and turn your campaign idea into a brief they can act on.</p>
             </div>
             <button class="button button-primary heading-cta" id="create-brief-top"><span>＋</span> Create a brief</button>
           </div>
 
           <div class="metrics-row">
-            <div class="metric"><span class="metric-icon lilac">✳</span><span><strong>08</strong><small>DEMO PROFILES</small></span></div>
-            <div class="metric"><span class="metric-icon mint">◇</span><span><strong>16</strong><small>CONCEPT SAMPLES</small></span></div>
+            <div class="metric"><span class="metric-icon lilac">✳</span><span><strong>08</strong><small>DEMO CREATORS</small></span></div>
+            <div class="metric"><span class="metric-icon mint">◇</span><span><strong>16</strong><small>SAMPLE CONCEPTS</small></span></div>
             <div class="metric"><span class="metric-icon peach">↗</span><span><strong>AI</strong><small>BRIEF STARTER</small></span></div>
             <div class="metric-note"><span class="sparkle">✦</span> Thoughtful work, made with AI.</div>
           </div>
@@ -89,6 +90,37 @@
             </section>
             <div class="creator-grid" id="creator-grid" aria-live="polite"></div>
           </div>
+        </section>
+
+        <section id="pulse-view" class="view hidden" aria-labelledby="pulse-title">
+          <header class="pulse-hero">
+            <div class="pulse-hero-copy">
+              <div class="eyebrow"><span class="eyebrow-line"></span> CREATOR PULSE · LIVE SOURCES</div>
+              <h1 id="pulse-title">A clearer read<br /><span>on what’s changing.</span></h1>
+              <p>Fresh AI and platform updates, with a practical lens for the people making the work and the teams commissioning it.</p>
+            </div>
+            <div class="pulse-hero-side"><span class="pulse-orbit" aria-hidden="true">✳</span><button class="button button-primary" id="refresh-news" type="button">Refresh stories <span>↻</span></button></div>
+            <div class="pulse-update" id="pulse-update" role="status" aria-live="polite"><i></i> Headlines load from publisher feeds when you open this page.</div>
+          </header>
+
+          <div class="pulse-toolbar">
+            <div class="pulse-filters" role="group" aria-label="Filter stories by topic">
+              <button class="pulse-filter is-active" type="button" data-pulse-filter="all" aria-pressed="true">All stories</button>
+              <button class="pulse-filter" type="button" data-pulse-filter="AI &amp; tools" aria-pressed="false">AI &amp; tools</button>
+              <button class="pulse-filter" type="button" data-pulse-filter="Platforms" aria-pressed="false">Platforms</button>
+              <button class="pulse-filter" type="button" data-pulse-filter="Creator economy" aria-pressed="false">Creator economy</button>
+            </div>
+            <div class="pulse-lens" role="group" aria-label="Choose whose perspective to show">
+              <span>Perspective</span>
+              <button class="is-active" type="button" data-pulse-lens="creator" aria-pressed="true">Creator</button>
+              <button type="button" data-pulse-lens="brand" aria-pressed="false">Brand</button>
+            </div>
+          </div>
+
+          <div class="pulse-section-heading"><div><span class="eyebrow-line"></span><h2>Signals worth a look</h2></div><span>Recent publisher updates · open each source to verify details</span></div>
+          <div id="pulse-status" class="pulse-status" role="status" aria-live="polite">Open Creator Pulse to load the latest headlines.</div>
+          <div id="pulse-grid" class="pulse-grid"></div>
+          <footer class="pulse-sources"><span>Direct publisher feeds:</span><a href="https://openai.com/news/" target="_blank" rel="noopener noreferrer">OpenAI News ↗</a><a href="https://blog.google/" target="_blank" rel="noopener noreferrer">Google Blog ↗</a><small>Headlines and excerpts belong to their publishers. CreatorBridge adds topic labels and practical questions, not news claims.</small></footer>
         </section>
 
         <section id="briefs-view" class="view hidden">
