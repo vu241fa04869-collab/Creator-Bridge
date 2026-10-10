@@ -11,6 +11,8 @@
 
 Brands often know the campaign they want but do not know which AI creator has the right tools, style, or workflow. CreatorBridge AI turns the campaign idea into a shared brief and a shortlist of three creators, with a reason beside every recommendation. Brands can inspect each creator's workflow, select a match, and keep the brief attached to that creator. A separate Gemini-powered starter can shape a rough idea into an editable draft; BridgeBuddy helps people resolve project friction with calm, practical next steps. The sample profiles are clearly marked as demonstrations, and the match score is a transparent rules-based estimate—not a claim that AI knows a creator's real ability.
 
+Creator Pulse adds recent, source-linked announcements from OpenAI and Google. Creators and brands can switch perspectives to see practical questions to consider, then carry a story into a new campaign brief. The feed shows publisher headlines and excerpts directly; the perspective prompts are product guidance, not news reporting.
+
 ## Live demo sequence
 
 1. On **Explore creators**, click **Try the sample match**. The pre-filled launch-film brief makes the demo work without a Gemini key.
@@ -19,6 +21,7 @@ Brands often know the campaign they want but do not know which AI creator has th
 4. Change the format or creative idea and show the shortlist recompute. The reasons and fit score update with the brief.
 5. Save the campaign and open it from **My briefs** to show the creator association. The Gemini starter remains available as a separate editable drafting tool when configured.
 6. Close with BridgeBuddy's complaint-resolution flow, then say which profile data is illustrative and what a real marketplace would need to verify.
+7. If time allows, open **Creator Pulse**, switch between the Creator and Brand perspectives, and use one article as the starting point for an original campaign brief.
 
 ## Criteria mapping
 
@@ -27,6 +30,7 @@ Brands often know the campaign they want but do not know which AI creator has th
 | Creator profiles and portfolios | Tools, skills, workflow, profile details, and selected concept tiles |
 | Discovery and filtering | Search plus combined specialty, tool, and content type filters |
 | Brief-to-creator matching | Three ranked suggestions, visible fit reasons, live updates, and a selected creator saved on the brief |
+| Industry context and perspective | Recent OpenAI and Google announcements with direct source links, topic filters, Creator/Brand lens, and story-to-brief action |
 | AI and responsible product design | Gemini is an editable draft helper; the fit estimate is rules-based and explained, and sample creator data is labeled |
 | Campaign briefs | Structured editable brief, optional Gemini starter, saved brief list and detail view |
 | User experience | Responsive marketplace, empty states, clear demo labels, complaint-resolution assistant, and working navigation |

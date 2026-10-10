@@ -21,6 +21,7 @@ To enable real AI brief generation, set `GEMINI_API_KEY` in `server/.env`, resta
 ## Features
 
 - Creator discovery with combined search, specialty, AI tool, and content type filters.
+- Creator Pulse with recent OpenAI and Google publisher headlines, topic filters, creator/brand perspectives, and a one-click path from a news signal into a new brief. Feeds are fetched server-side, cached briefly, and always link to the publisher.
 - Creator portfolio/profile views with listed skills, tools, workflow, and illustrative rates.
 - Brief-to-creator shortlist with three ranked candidates, visible reasons, and a selectable creator saved with the brief. The estimate is rules-based and uses only the brief's format, named tools, creative direction, and optional illustrative rates; it is not a claim of verified creator quality.
 - Campaign briefs with content type, style, aspect ratio, commercial usage, budget, deadline, and optional creator association.
@@ -36,6 +37,7 @@ To enable real AI brief generation, set `GEMINI_API_KEY` in `server/.env`, resta
 | Method | Route | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/health` | Service and integration status |
+| `GET` | `/api/news` | Recent filtered headlines from official OpenAI and Google feeds; cached for 15 minutes |
 | `GET` | `/api/creators` | List profiles; accepts combined `search`, `specialty`, `tool`, and `type` parameters |
 | `GET` | `/api/creators/:id` | Get one creator profile |
 | `GET` | `/api/briefs` | List saved campaign briefs |
@@ -89,7 +91,7 @@ The source repository is [vu241fa04869-collab/Creator-Bridge](https://github.com
 ## Project files
 
 - `client/` — Vite frontend.
-- `server/src/routes/` — creator, brief, and AI API routes.
+- `server/src/routes/` — creator, brief, AI, and live news API routes.
 - `server/src/models/` — MongoDB schemas.
 - `server/data/creators.json` — clearly labeled demo seed data.
 - `server/.env.example` — environment variable template.
