@@ -23,6 +23,11 @@ const byId = id => creators.find(c => c.id === id);
 const $ = selector => document.querySelector(selector);
 const grid = $("#creator-grid"), backdrop = $("#modal-backdrop"), modal = $("#modal-content");
 const API_BASE = ($('meta[name="api-base"]')?.content || "").replace(/\/$/, "");
+let pulseArticles = [];
+let pulseLoaded = false;
+let pulseBusy = false;
+let pulseCategory = "all";
+let pulseLens = "creator";
 let remoteBriefs = null;
 let toastTimer;
 let complaintHistory = [];
@@ -147,10 +152,16 @@ function openBriefForm(creatorId="",options={}){
     $("#brief-style").value="Cinematic, hopeful, fast-moving; rain into sunrise.";
     $("#brief-idea").value="Create a 20-second vertical launch film for a sustainable running jacket. Follow a city runner through Mumbai monsoon rain into a bright sunrise. Make it cinematic and optimistic for Instagram Reels; use Runway and DaVinci Resolve for AI-assisted footage and editorial finishing.";
     $("#ai-idea").value="A short cinematic, optimistic launch film for a sustainable running jacket, following a runner through monsoon rain into sunrise. Made for Instagram Reels.";
+  }else if(options.news){
+    const story=options.news;
+    $("#brief-title").value=`Story signal: ${String(story.title||"").slice(0,56)}`;
+    $("#brief-type").value="Campaign";
+    $("#brief-idea").value=`Develop an original campaign inspired by this industry signal. Do not copy the article or its creative work.\n\nStory: ${story.title}\n${story.summary||""}\n\nSource: ${story.url}`;
+    $("#ai-idea").value=`Draft an original campaign brief informed by this industry update: ${story.title}`;
   }
   $("#brief-form").addEventListener("input",renderMatchPreview);
   $("#brief-form").addEventListener("change",renderMatchPreview);
-  if(options.demo||c)renderMatchPreview();
+  if(options.demo||c||options.news)renderMatchPreview();
 $("#brief-title").focus();
 }
 function renderMatchPreview(){
@@ -164,17 +175,61 @@ function renderMatchPreview(){
     return `<article class="match-result-card${isSelected?" is-selected":""}"><span class="match-rank">0${index+1}</span><span class="match-avatar" style="--avatar:${creator.palette[0]};--ink:${creator.palette[1]}">${escapeHtml(creator.initials)}</span><div class="match-result-main"><div class="match-creator-line"><strong>${escapeHtml(creator.name)}</strong><span>${escapeHtml(creator.specialty)}</span></div><div class="match-reasons">${(item.reasons.length?item.reasons:["Related creative profile"]).map(reason=>`<span>${escapeHtml(reason)}</span>`).join("")}</div></div><div class="match-score"><strong>${item.score}%</strong><small>brief fit</small></div><button class="button button-select-match${isSelected?" selected":""}" type="button" data-select-match="${creator.id}" aria-pressed="${isSelected}">${isSelected?"Selected ✓":"Choose"}</button></article>`;
   }).join("")}</div><p class="match-disclaimer">A transparent rules-based estimate, not an AI decision or guarantee. Demo profiles and rates are illustrative and unverified; confirm fit and pricing with creators.</p>`;
 }
+function pulsePerspective(article,lens){
+  const perspectives={
+    "AI & tools":{
+      creator:"Creator lens · Check tool access, commercial terms, and how the tool fits your own workflow before quoting it.",
+      brand:"Brand lens · State what tools are optional or required, then confirm ownership and usage rights with the creator."
+    },
+    Platforms:{
+      creator:"Creator lens · Check whether any new feature or earning option is available to your account and region.",
+      brand:"Brand lens · Confirm the audience, format, and platform requirements with the creator before locking the brief."
+    },
+    "Creator economy":{
+      creator:"Creator lens · Make scope, revisions, credits, and usage rights clear before agreeing to a rate.",
+      brand:"Brand lens · Budget separately for production, revisions, and the usage rights your campaign needs."
+    }
+  };
+  return perspectives[article.category]?.[lens]||perspectives["Creator economy"][lens];
+}
+function renderPulse(){
+  const host=$("#pulse-grid");if(!host)return;
+  const filtered=pulseArticles.map((article,index)=>({article,index})).filter(({article})=>pulseCategory==="all"||article.category===pulseCategory);
+  if(!filtered.length){host.innerHTML='<div class="pulse-empty"><span>◷</span><strong>No recent stories in this view</strong><p>Try another topic, change perspective, or refresh the publisher feeds.</p></div>';return;}
+  host.innerHTML=filtered.map(({article,index})=>{
+    const published=Date.parse(article.publishedAt);
+    const date=Number.isFinite(published)?new Date(published).toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"}):"Recent";
+    return `<article class="pulse-card"><div class="pulse-card-top"><span class="pulse-category">${escapeHtml(article.category)}</span><time datetime="${escapeHtml(article.publishedAt)}">${escapeHtml(date)}</time></div><h3>${escapeHtml(article.title)}</h3><p class="pulse-summary">${escapeHtml(article.summary||"Open the publisher’s story for the full update.")}</p><div class="pulse-perspective">${escapeHtml(pulsePerspective(article,pulseLens))}</div><div class="pulse-card-actions"><a href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(article.source)} source ↗</a><button type="button" data-pulse-brief="${index}">Use as a brief signal <span>↗</span></button></div></article>`;
+  }).join("");
+}
+async function loadPulse(force=false){
+  if(pulseBusy||(!force&&pulseLoaded))return;
+  pulseBusy=true;const refresh=$("#refresh-news"),status=$("#pulse-status"),update=$("#pulse-update");
+  refresh.disabled=true;refresh.classList.add("is-loading");status.textContent="Checking official publisher feeds…";status.classList.remove("is-error");
+  try{
+    const payload=await apiRequest("/api/news");pulseArticles=Array.isArray(payload.articles)?payload.articles:[];pulseLoaded=true;
+    const updated=payload.updatedAt?new Date(payload.updatedAt):new Date();
+    update.innerHTML=`<i></i> Updated ${escapeHtml(updated.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"}))}${payload.cached?" · cached briefly to keep feeds quick":" · live publisher feeds"}${payload.partial?" · one source unavailable":""}`;
+    status.textContent=pulseArticles.length?`${pulseArticles.length} recent stories from official publisher feeds. Select a perspective to see questions to consider.`:"No recent articles were returned. Open a publisher feed below or refresh later.";
+    renderPulse();
+  }catch(error){
+    pulseLoaded=true;status.textContent=error.message||"The publisher feeds are unavailable right now.";status.classList.add("is-error");
+    update.innerHTML="<i></i> Feed connection unavailable · try again shortly";
+    $("#pulse-grid").innerHTML='<div class="pulse-empty"><span>↻</span><strong>News feeds could not be reached</strong><p>Use the direct publisher links below or try refreshing in a moment.</p></div>';
+  }finally{pulseBusy=false;refresh.disabled=false;refresh.classList.remove("is-loading");}
+}
 function renderBriefs(){
   const items=briefs(), host=$("#brief-list");
   if(!items.length){host.innerHTML='<div class="brief-empty"><div class="empty-symbol">▤</div><h2>Your next idea starts here.</h2><p>Create a brief to give creators a clear starting point for your campaign.</p><button class="button button-primary" id="empty-create">＋ Create your first brief</button></div>';return;}
   host.innerHTML=items.slice().reverse().map(b=>`<article class="brief-row"><div class="brief-main"><span class="brief-icon">▤</span><span><h3>${escapeHtml(b.title)}</h3><p>${escapeHtml(b.brand)} · ${escapeHtml(b.type)}${b.creator?` · For ${escapeHtml(byId(b.creator)?.name||"creator")}`:""}</p></span></div><div class="brief-meta"><span>${escapeHtml(b.createdAt)}</span><span class="status-pill">Draft</span><button class="view-profile" data-brief="${escapeHtml(b.id)}">View ↗</button></div></article>`).join("");
 }
 function showView(name){
-  const views={explore:"#explore-view",briefs:"#briefs-view",complaints:"#complaints-view"};
+  const views={explore:"#explore-view",pulse:"#pulse-view",briefs:"#briefs-view",complaints:"#complaints-view"};
   Object.entries(views).forEach(([key,selector])=>$(selector).classList.toggle("hidden",key!==name));
   document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("is-active",b.dataset.view===name));
-  $("#breadcrumb-current").textContent={explore:"Explore creators",briefs:"My briefs",complaints:"Resolution studio"}[name]||"Explore creators";
+  $("#breadcrumb-current").textContent={explore:"Explore creators",pulse:"Creator Pulse",briefs:"My briefs",complaints:"Resolution studio"}[name]||"Explore creators";
   if(name==="briefs")renderBriefs();
+  if(name==="pulse")loadPulse();
   if(name==="complaints")setTimeout(()=>$("#complaint-input")?.focus(),0);
 }
 function notify(message){const toast=$("#toast");toast.textContent=message;toast.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove("show"),2400);}
@@ -239,6 +294,10 @@ hydrateFromApi();
 ["#search-input","#specialty-filter","#tool-filter","#type-filter","#sort-select"].forEach(selector=>$(selector).addEventListener(selector==="#search-input"?"input":"change",renderCreators));
 $("#clear-filters").addEventListener("click",clearFilters);
 document.querySelectorAll(".nav-item").forEach(button=>button.addEventListener("click",()=>showView(button.dataset.view)));
+$("#refresh-news").addEventListener("click",()=>loadPulse(true));
+document.querySelector(".pulse-filters").addEventListener("click",event=>{const button=event.target.closest("[data-pulse-filter]");if(!button)return;pulseCategory=button.dataset.pulseFilter;document.querySelectorAll("[data-pulse-filter]").forEach(item=>{const active=item===button;item.classList.toggle("is-active",active);item.setAttribute("aria-pressed",String(active));});renderPulse();});
+document.querySelector(".pulse-lens").addEventListener("click",event=>{const button=event.target.closest("[data-pulse-lens]");if(!button)return;pulseLens=button.dataset.pulseLens;document.querySelectorAll("[data-pulse-lens]").forEach(item=>{const active=item===button;item.classList.toggle("is-active",active);item.setAttribute("aria-pressed",String(active));});renderPulse();});
+$("#pulse-grid").addEventListener("click",event=>{const button=event.target.closest("[data-pulse-brief]");if(!button)return;const article=pulseArticles[Number(button.dataset.pulseBrief)];if(article)openBriefForm("",{news:article});});
 $("#open-complaint-studio").addEventListener("click",()=>showView("complaints"));
 $("#complaint-form").addEventListener("submit",event=>{event.preventDefault();const input=$("#complaint-input"),message=input.value;input.value="";$("#complaint-char-count").textContent="0 / 3,000";input.style.height="";sendComplaint(message);});
 $("#complaint-input").addEventListener("input",event=>{$("#complaint-char-count").textContent=`${event.target.value.length.toLocaleString("en-IN")} / 3,000`;event.target.style.height="auto";event.target.style.height=`${Math.min(event.target.scrollHeight,120)}px`;});
