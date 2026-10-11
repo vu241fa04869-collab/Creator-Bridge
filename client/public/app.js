@@ -32,6 +32,15 @@ let remoteBriefs = null;
 let toastTimer;
 let complaintHistory = [];
 let complaintBusy = false;
+const rootCauseSteps = [
+  { short: "Issue", title: "Define the problem", prompt: "What was agreed, and what happened instead?", key: "problem", type: "text", placeholder: "A short, factual summary…" },
+  { short: "Causes", title: "Explore possible causes", prompt: "What might explain the gap? Select any possibilities to check.", key: "causes", type: "multi", options: ["The brief or deliverable was unclear", "A deadline or approval was missed", "The scope changed after agreement", "A payment or refund is still processing", "A message, file, or asset is missing", "I’m not sure yet"] },
+  { short: "Evidence", title: "Validate with facts", prompt: "Which records can help confirm what happened?", key: "evidence", type: "multi", options: ["Original brief or agreement", "Delivery, invoice, or payment timeline", "Messages and approval notes", "Files, links, or revision history"] },
+  { short: "Response", title: "Choose a fair response", prompt: "What would move this toward a practical resolution?", key: "outcome", type: "single", options: ["Ask for a clear status and date", "Agree on a revision or scope", "Clarify a payment or refund", "Pause and align before more work", "Discuss usage, credit, or rights"] },
+  { short: "Details", title: "Gather useful details", prompt: "What important information is still missing?", key: "missing", type: "text", placeholder: "For example: the agreed due date, version delivered, or last reply…" }
+];
+let rootCauseState = { problem: "", causes: new Set(), evidence: new Set(), outcome: "", missing: "" };
+let rootCauseStep = 0;
 let demoTourStep = -1;
 const localBriefs = () => { try { return JSON.parse(localStorage.getItem("creatorbridge-briefs") || "[]"); } catch { return []; } };
 const briefs = () => remoteBriefs ?? localBriefs();
@@ -282,6 +291,68 @@ function setServiceStatus(health){
   if(mode)mode.textContent=ai?"Gemini AI · private session":"Guided demo · add Gemini for AI";
 }
 
+function rootCauseStepComplete(step){
+  const value=rootCauseState[step.key];
+  return step.type==="text"?Boolean(value.trim()):step.type==="multi"?value.size>0:Boolean(value);
+}
+function syncRootCauseProgress(){
+  document.querySelectorAll("#root-cause-progress [data-root-cause-step]").forEach((button,index)=>{
+    const step=rootCauseSteps[index],complete=rootCauseStepComplete(step);
+    button.classList.toggle("is-current",index===rootCauseStep);
+    button.classList.toggle("is-complete",complete);
+    if(index===rootCauseStep)button.setAttribute("aria-current","step");else button.removeAttribute("aria-current");
+    button.setAttribute("aria-label",`Step ${index+1}: ${step.short}${complete?", notes added":""}${index===rootCauseStep?", current step":""}`);
+  });
+}
+function renderRootCauseStep(){
+  const step=rootCauseSteps[rootCauseStep],progress=$("#root-cause-progress"),fields=$("#root-cause-fields");
+  if(!step||!progress||!fields)return;
+  progress.replaceChildren();
+  rootCauseSteps.forEach((item,index)=>{
+    const button=document.createElement("button");button.type="button";button.dataset.rootCauseStep=String(index);button.textContent=String(index+1);button.addEventListener("click",()=>{rootCauseStep=index;renderRootCauseStep();});progress.append(button);
+  });
+  syncRootCauseProgress();
+  $("#root-cause-step-label").textContent=`STEP 0${rootCauseStep+1} · ${step.short.toUpperCase()}`;
+  $("#root-cause-step-title").textContent=step.title;
+  $("#root-cause-step-prompt").textContent=step.prompt;
+  fields.replaceChildren();
+  if(step.type==="text"){
+    const input=document.createElement("textarea");input.rows=2;input.maxLength=700;input.placeholder=step.placeholder;input.setAttribute("aria-label",step.prompt);input.value=rootCauseState[step.key];input.addEventListener("input",()=>{rootCauseState[step.key]=input.value;syncRootCauseProgress();});fields.append(input);
+  }else{
+    const group=document.createElement("div");group.className="root-cause-options";group.setAttribute("role","group");group.setAttribute("aria-label",step.prompt);
+    step.options.forEach(option=>{
+      const button=document.createElement("button");button.type="button";button.className="root-cause-option";button.textContent=option;
+      const selected=step.type==="multi"?rootCauseState[step.key].has(option):rootCauseState[step.key]===option;
+      button.setAttribute("aria-pressed",String(selected));button.classList.toggle("is-selected",selected);
+      button.addEventListener("click",()=>{
+        if(step.type==="multi"){
+          if(rootCauseState[step.key].has(option))rootCauseState[step.key].delete(option);else rootCauseState[step.key].add(option);
+          const selected=rootCauseState[step.key].has(option);button.setAttribute("aria-pressed",String(selected));button.classList.toggle("is-selected",selected);
+        }else{
+          rootCauseState[step.key]=rootCauseState[step.key]===option?"":option;
+          group.querySelectorAll(".root-cause-option").forEach(item=>{const selected=item===button&&rootCauseState[step.key]===option;item.setAttribute("aria-pressed",String(selected));item.classList.toggle("is-selected",selected);});
+        }
+        syncRootCauseProgress();
+      });group.append(button);
+    });fields.append(group);
+  }
+  $("#root-cause-back").disabled=rootCauseStep===0;
+  $("#root-cause-next").textContent=rootCauseStep===rootCauseSteps.length-1?"Add notes to chat →":"Next step →";
+}
+function addRootCauseNotesToChat(){
+  const notes=[
+    "Root-cause check — draft notes. Please help me review these facts fairly:",
+    rootCauseState.problem.trim()&&`What was expected vs. what happened: ${rootCauseState.problem.trim()}`,
+    rootCauseState.causes.size&&`Possible factors to check: ${[...rootCauseState.causes].join("; ")}`,
+    rootCauseState.evidence.size&&`Records available: ${[...rootCauseState.evidence].join("; ")}`,
+    rootCauseState.outcome&&`Fair next step I want: ${rootCauseState.outcome}`,
+    rootCauseState.missing.trim()&&`Information still missing: ${rootCauseState.missing.trim()}`
+  ].filter(Boolean).join("\n\n");
+  const input=$("#complaint-input"),combined=[input.value.trim(),notes].filter(Boolean).join("\n\n").slice(0,3000);
+  input.value=combined;input.dispatchEvent(new Event("input",{bubbles:true}));input.scrollIntoView({behavior:"smooth",block:"center"});input.focus();
+  notify("Draft notes added. Review them before sending to BridgeBuddy.");
+}
+
 function scrollComplaintChat(){const host=$("#complaint-messages");host.scrollTop=host.scrollHeight;}
 function addChatBubble(role,text,label){
   const host=$("#complaint-messages"), article=document.createElement("article"), avatar=document.createElement("div"), content=document.createElement("div"), speaker=document.createElement("span"), paragraph=document.createElement("p");
@@ -303,7 +374,7 @@ function addComplaintResult(result){
   content.append(details);scrollComplaintChat();
 }
 function resetComplaintChat(){
-  complaintHistory=[];$("#complaint-messages").innerHTML='<div class="chat-date">TODAY · YOUR SESSION IS NOT SAVED</div><article class="chat-message assistant-message"><div class="message-avatar">B</div><div class="message-content"><span class="speaker-label">BRIDGEBUDDY <span>JUST NOW</span></span><p>Hi, I’m here to help you move a tough situation toward a clear next step. What happened, and what outcome would feel fair to you?</p><small>You can keep names and account details out of it.</small></div></article>';$("#complaint-suggestions").classList.remove("hidden");$("#complaint-input").value="";$("#complaint-char-count").textContent="0 / 3,000";$("#complaint-input").focus();
+  complaintHistory=[];rootCauseState={problem:"",causes:new Set(),evidence:new Set(),outcome:"",missing:""};rootCauseStep=0;$("#complaint-messages").innerHTML='<div class="chat-date">TODAY · YOUR SESSION IS NOT SAVED</div><article class="chat-message assistant-message"><div class="message-avatar">B</div><div class="message-content"><span class="speaker-label">BRIDGEBUDDY <span>JUST NOW</span></span><p>Hi, I’m here to help you move a tough situation toward a clear next step. What happened, and what outcome would feel fair to you?</p><small>You can keep names and account details out of it.</small></div></article>';$("#complaint-suggestions").classList.remove("hidden");$("#complaint-input").value="";$("#complaint-char-count").textContent="0 / 3,000";if(!$("#root-cause-panel").classList.contains("hidden"))renderRootCauseStep();$("#complaint-input").focus();
 }
 async function sendComplaint(message,context=null){
   if(complaintBusy||!message.trim())return;
@@ -337,6 +408,9 @@ $("#open-complaint-studio").addEventListener("click",()=>showView("complaints"))
 $("#complaint-form").addEventListener("submit",event=>{event.preventDefault();const input=$("#complaint-input"),message=input.value;input.value="";$("#complaint-char-count").textContent="0 / 3,000";input.style.height="";sendComplaint(message);});
 $("#complaint-input").addEventListener("input",event=>{$("#complaint-char-count").textContent=`${event.target.value.length.toLocaleString("en-IN")} / 3,000`;event.target.style.height="auto";event.target.style.height=`${Math.min(event.target.scrollHeight,120)}px`;});
 $("#clear-complaint-chat").addEventListener("click",resetComplaintChat);
+$("#root-cause-toggle").addEventListener("click",event=>{const toggle=event.currentTarget,panel=$("#root-cause-panel"),open=panel.classList.toggle("hidden");toggle.setAttribute("aria-expanded",String(!open));toggle.firstChild.textContent=open?"Start check ":"Close check ";toggle.querySelector("span").textContent=open?"↗":"×";if(!open){renderRootCauseStep();$("#root-cause-fields textarea, #root-cause-fields button")?.focus();}});
+$("#root-cause-back").addEventListener("click",()=>{if(rootCauseStep>0){rootCauseStep--;renderRootCauseStep();$("#root-cause-fields textarea, #root-cause-fields button")?.focus();}});
+$("#root-cause-next").addEventListener("click",()=>{if(rootCauseStep<rootCauseSteps.length-1){rootCauseStep++;renderRootCauseStep();$("#root-cause-fields textarea, #root-cause-fields button")?.focus();return;}addRootCauseNotesToChat();});
 document.querySelectorAll("[data-scenario]").forEach(button=>button.addEventListener("click",()=>{showView("complaints");const input=$("#complaint-input");input.value=button.dataset.message||"";$("#complaint-char-count").textContent=`${input.value.length} / 3,000`;input.focus();}));
 document.querySelectorAll("#complaint-suggestions [data-prompt]").forEach(button=>button.addEventListener("click",()=>{const input=$("#complaint-input");input.value=button.dataset.prompt;$("#complaint-char-count").textContent=`${input.value.length} / 3,000`;$("#complaint-form").requestSubmit();}));
 $("#creator-grid").addEventListener("click",event=>{const button=event.target.closest("[data-profile]");if(button)profileModal(button.dataset.profile)});
