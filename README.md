@@ -24,6 +24,7 @@ To enable real AI brief generation, set `GEMINI_API_KEY` in `server/.env`, resta
 - Creator Pulse with recent OpenAI and Google publisher headlines, topic filters, creator/brand perspectives, and a one-click path from a news signal into a new brief. Feeds are fetched server-side, cached briefly, and always link to the publisher.
 - A five-step, 90-second guided tour through creator discovery, Creator Pulse, an editable sample brief with explainable matches, Campaign Clarity Coach, and BridgeBuddy. It never saves the sample brief or submits a complaint.
 - Campaign Clarity Coach that turns a campaign goal and observed result into clearly labeled hypotheses, evidence checks, and three small experiments with measurable outcomes. It uses Gemini when configured and a labeled guided demo otherwise; it never fetches private analytics or saves notes without a user action.
+- Retail Pilot Lab: an interactive fictional retail campaign walkthrough with product and goal choices, role-based creator examples, three selectable outcomes, and an outcome-specific next test. All numbers are simulated, the creator roles are illustrative, no retailer systems or private data are connected, and a selected scenario can seed an editable brief.
 - Creator portfolio/profile views with listed skills, tools, workflow, and illustrative rates.
 - Brief-to-creator shortlist with three ranked candidates, visible reasons, and a selectable creator saved with the brief. The estimate is rules-based and uses only the brief's format, named tools, creative direction, and optional illustrative rates; it is not a claim of verified creator quality.
 - Campaign briefs with content type, style, aspect ratio, commercial usage, budget, deadline, and optional creator association.
@@ -89,7 +90,8 @@ The source repository is [vu241fa04869-collab/Creator-Bridge](https://github.com
 3. Choose a creator, save the brief, and reopen it from **My briefs** to show the selection stayed with the campaign.
 4. Open the creator profile to show the listed tools, workflow, illustrative concepts, and unverified demo label.
 5. Optionally use the Gemini brief starter and BridgeBuddy complaint helper when the API key is configured; review all AI output before using it.
-6. State that fit scores are an explainable prototype estimate and that all sample profiles, portfolio concepts, and rates need creator confirmation.
+6. Open **Retail pilot** and switch between the three simulated outcomes. Show that a sales gap, a promising signal, and no clear lift each lead to a different controlled test.
+7. State that fit scores are an explainable prototype estimate and that all sample profiles, portfolio concepts, rates, and retail results need verification before a real campaign.
 
 ## Project files
 
