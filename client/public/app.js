@@ -40,8 +40,13 @@ const retailProducts = {
 };
 const retailGoals = {
   orders:"Turn product-page visits into purchases",
-  feature:"Make one product benefit easier to understand",
+  feature:"Increase qualified product-page visits",
   launch:"Build awareness for a new product launch"
+};
+const retailGoalMeasures = {
+  orders:{primary:"Item-page visit → order rate",context:"The purchase signal is the primary goal.",measure:outcome=>outcome.measure},
+  feature:{primary:"Qualified item-page clicks per view",context:"For this goal, clicks are primary and orders are a downstream signal.",measure:"Compare qualified item-page clicks per view against a matched baseline; monitor orders as a secondary signal."},
+  launch:{primary:"Qualified reach → item-page visits",context:"For launch awareness, prioritize reach among the intended audience; clicks and orders are downstream signals.",measure:"Compare qualified unique reach and item-page visits with a matched baseline; track first orders as a secondary signal."}
 };
 const retailOutcomes = {
   "sales-gap": {
@@ -348,13 +353,15 @@ function renderBriefs(){
 function renderRetailOutcome(){
   const product=retailProducts[retailPilotState.product]||retailProducts["rain-shell"];
   const outcome=retailOutcomes[retailPilotState.outcome]||retailOutcomes["sales-gap"];
+  const goalMeasure=retailGoalMeasures[retailPilotState.goal]||retailGoalMeasures.orders;
   $("#retail-product-audience").textContent=product.audience;
-  $("#retail-outcome-result").innerHTML='<article class="retail-result-card"><header class="retail-result-head"><div><span>SIMULATED RESULT · '+escapeHtml(product.name)+' · '+escapeHtml(retailGoals[retailPilotState.goal])+'</span><h3>'+escapeHtml(outcome.label)+'</h3><p>'+escapeHtml(outcome.summary)+'</p></div><span class="retail-sample-stamp">SAMPLE<br>ONLY</span></header><div class="retail-metric-grid">'+outcome.metrics.map(metric=>'<div class="retail-metric"><strong>'+escapeHtml(metric[0])+'</strong><span>'+escapeHtml(metric[1])+'</span></div>').join("")+'</div><div class="retail-readout-grid"><article><span>WHAT THIS SIGNAL MAY MEAN</span><p>'+escapeHtml(outcome.read)+'</p></article><article class="retail-next-test"><span>ONE CONTROLLED NEXT TEST</span><p><strong>Change</strong>'+escapeHtml(outcome.change)+'</p><p><strong>Measure</strong>'+escapeHtml(outcome.measure)+'</p><p><strong>Guardrail</strong>'+escapeHtml(outcome.guardrail)+'</p></article></div><div class="retail-result-foot"><p>All values above are invented for this walkthrough. No Walmart or customer data is connected.</p><button class="button retail-brief-button" id="retail-create-brief" type="button">Turn this into a draft brief <span>↗</span></button></div></article>';
+  $("#retail-outcome-result").innerHTML='<article class="retail-result-card"><header class="retail-result-head"><div><span>SIMULATED RESULT · '+escapeHtml(product.name)+' · '+escapeHtml(retailGoals[retailPilotState.goal])+'</span><h3>'+escapeHtml(outcome.label)+'</h3><p>'+escapeHtml(outcome.summary)+'</p></div><span class="retail-sample-stamp">SAMPLE<br>ONLY</span></header><div class="retail-metric-grid">'+outcome.metrics.map(metric=>'<div class="retail-metric"><strong>'+escapeHtml(metric[0])+'</strong><span>'+escapeHtml(metric[1])+'</span></div>').join("")+'</div><div class="retail-readout-grid"><article><span>WHAT THIS SIGNAL MAY MEAN</span><p>'+escapeHtml(outcome.read+" "+goalMeasure.context)+'</p></article><article class="retail-next-test"><span>ONE CONTROLLED NEXT TEST</span><p><strong>Change</strong>'+escapeHtml(outcome.change)+'</p><p><strong>Primary metric · '+escapeHtml(goalMeasure.primary)+'</strong>'+escapeHtml(goalMeasure.measure(outcome))+'</p><p><strong>Guardrail</strong>'+escapeHtml(outcome.guardrail)+'</p></article></div><div class="retail-result-foot"><p>All values above are invented for this walkthrough. No Walmart or customer data is connected.</p><button class="button retail-brief-button" id="retail-create-brief" type="button">Turn this into a draft brief <span>↗</span></button></div></article>';
 }
 function openRetailDemoBrief(){
   const product=retailProducts[retailPilotState.product]||retailProducts["rain-shell"];
   const outcome=retailOutcomes[retailPilotState.outcome]||retailOutcomes["sales-gap"];
   const goal=retailGoals[retailPilotState.goal]||retailGoals.orders;
+  const goalMeasure=retailGoalMeasures[retailPilotState.goal]||retailGoalMeasures.orders;
   openBriefForm("",{demo:true});
   $("#modal-title").textContent="Retail pilot · draft brief";
   $("#modal-title").parentElement.querySelector("p").textContent="Illustrative scenario · review and edit before saving.";
@@ -362,7 +369,7 @@ function openRetailDemoBrief(){
   $("#brand-name").value="Retail pilot demo · fictional";
   $("#brief-type").value="Video";
   $("#brief-style").value="Clear product proof, an everyday use case, and one controlled creative test.";
-  $("#brief-idea").value=["Product: "+product.name+" ("+product.category+"; fictional demo item)","Goal: "+goal,"Audience: "+product.audience,"Next experiment: "+outcome.change,"Measure: "+outcome.measure].join("\n\n");
+  $("#brief-idea").value=["Product: "+product.name+" ("+product.category+"; fictional demo item)","Goal: "+goal,"Audience: "+product.audience,"Next experiment: "+outcome.change,"Primary metric: "+goalMeasure.primary,"Measure: "+goalMeasure.measure(outcome)].join("\n\n");
   $("#brief-challenge").value=outcome.briefChallenge;
   $("#brief-evidence").value=outcome.briefEvidence;
   $("#brief-unknowns").value=outcome.briefUnknown;
