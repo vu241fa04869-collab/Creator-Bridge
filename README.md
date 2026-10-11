@@ -22,7 +22,8 @@ To enable real AI brief generation, set `GEMINI_API_KEY` in `server/.env`, resta
 
 - Creator discovery with combined search, specialty, AI tool, and content type filters.
 - Creator Pulse with recent OpenAI and Google publisher headlines, topic filters, creator/brand perspectives, and a one-click path from a news signal into a new brief. Feeds are fetched server-side, cached briefly, and always link to the publisher.
-- A four-step, 90-second guided tour through creator discovery, Creator Pulse, an editable sample brief with explainable matches, and BridgeBuddy. It never saves the sample brief or submits a complaint.
+- A five-step, 90-second guided tour through creator discovery, Creator Pulse, an editable sample brief with explainable matches, Campaign Clarity Coach, and BridgeBuddy. It never saves the sample brief or submits a complaint.
+- Campaign Clarity Coach that turns a campaign goal and observed result into clearly labeled hypotheses, evidence checks, and three small experiments with measurable outcomes. It uses Gemini when configured and a labeled guided demo otherwise; it never fetches private analytics or saves notes without a user action.
 - Creator portfolio/profile views with listed skills, tools, workflow, and illustrative rates.
 - Brief-to-creator shortlist with three ranked candidates, visible reasons, and a selectable creator saved with the brief. The estimate is rules-based and uses only the brief's format, named tools, creative direction, and optional illustrative rates; it is not a claim of verified creator quality.
 - Campaign briefs with content type, style, aspect ratio, commercial usage, budget, deadline, and optional creator association.
@@ -44,6 +45,7 @@ To enable real AI brief generation, set `GEMINI_API_KEY` in `server/.env`, resta
 | `GET` | `/api/briefs` | List saved campaign briefs |
 | `POST` | `/api/briefs` | Validate and save a campaign brief |
 | `POST` | `/api/ai/brief` | Generate a structured first-draft brief with Gemini |
+| `POST` | `/api/ai/campaign-diagnosis` | Turn campaign observations into hypotheses, evidence checks, and measurable experiments; uses a guided demo when Gemini is not configured |
 | `POST` | `/api/ai/complaint` | Return structured complaint-resolution guidance, using Gemini when configured |
 
 ## BridgeBuddy browser extension
@@ -82,7 +84,7 @@ The source repository is [vu241fa04869-collab/Creator-Bridge](https://github.com
 
 ## Suggested demo run-through
 
-1. On **Explore creators**, choose **Take the 90-second tour** for a guided path through the marketplace, live news, a prefilled matching brief, and BridgeBuddy. It does not save or send anything and does not require Gemini.
+1. On **Explore creators**, choose **Take the 90-second tour** for a guided path through the marketplace, live news, a prefilled matching brief, Campaign Clarity Coach, and BridgeBuddy. It does not save or send anything and does not require Gemini.
 2. After the tour, click **Try the sample match** to edit the launch-film idea, compare the three suggestions, and see the fit reasons update.
 3. Choose a creator, save the brief, and reopen it from **My briefs** to show the selection stayed with the campaign.
 4. Open the creator profile to show the listed tools, workflow, illustrative concepts, and unverified demo label.
