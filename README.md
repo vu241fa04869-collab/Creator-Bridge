@@ -22,6 +22,7 @@ To enable real AI brief generation, set `GEMINI_API_KEY` in `server/.env`, resta
 
 - Creator discovery with combined search, specialty, AI tool, and content type filters.
 - Creator Pulse with recent OpenAI and Google publisher headlines, topic filters, creator/brand perspectives, and a one-click path from a news signal into a new brief. Feeds are fetched server-side, cached briefly, and always link to the publisher.
+- A four-step, 90-second guided tour through creator discovery, Creator Pulse, an editable sample brief with explainable matches, and BridgeBuddy. It never saves the sample brief or submits a complaint.
 - Creator portfolio/profile views with listed skills, tools, workflow, and illustrative rates.
 - Brief-to-creator shortlist with three ranked candidates, visible reasons, and a selectable creator saved with the brief. The estimate is rules-based and uses only the brief's format, named tools, creative direction, and optional illustrative rates; it is not a claim of verified creator quality.
 - Campaign briefs with content type, style, aspect ratio, commercial usage, budget, deadline, and optional creator association.
@@ -81,8 +82,8 @@ The source repository is [vu241fa04869-collab/Creator-Bridge](https://github.com
 
 ## Suggested demo run-through
 
-1. On **Explore creators**, click **Try the sample match** for a prefilled launch-film idea. This flow works even when no Gemini API key is configured.
-2. Review the three suggestions and the visible fit reasons. Change the content format or brief idea to show the shortlist update.
+1. On **Explore creators**, choose **Take the 90-second tour** for a guided path through the marketplace, live news, a prefilled matching brief, and BridgeBuddy. It does not save or send anything and does not require Gemini.
+2. After the tour, click **Try the sample match** to edit the launch-film idea, compare the three suggestions, and see the fit reasons update.
 3. Choose a creator, save the brief, and reopen it from **My briefs** to show the selection stayed with the campaign.
 4. Open the creator profile to show the listed tools, workflow, illustrative concepts, and unverified demo label.
 5. Optionally use the Gemini brief starter and BridgeBuddy complaint helper when the API key is configured; review all AI output before using it.

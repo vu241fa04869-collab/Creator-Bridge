@@ -15,11 +15,11 @@ Creator Pulse adds recent, source-linked announcements from OpenAI and Google. C
 
 ## Live demo sequence
 
-1. On **Explore creators**, click **Try the sample match**. The pre-filled launch-film brief makes the demo work without a Gemini key.
-2. Point to the three recommended creators. Show that the fit estimate uses the requested format, any explicitly named tools, and overlapping creative directions; entering a budget adds the illustrative sample rate.
-3. Open a creator's profile if you want to inspect their listed tools and workflow. Choose one from the shortlist to attach that creator to the campaign brief.
+1. On **Explore creators**, click **Take the 90-second tour**. It walks through discovery, live news, a prefilled sample brief with matching reasons, and BridgeBuddy; it does not save the sample brief or send a complaint.
+2. After the tour, click **Try the sample match**. Show how the fit estimate uses the requested format, named tools, and overlapping creative directions; entering a budget adds the illustrative sample rate.
+3. Open a creator's profile to inspect their listed tools and workflow. Choose one from the shortlist to attach that creator to the campaign brief.
 4. Change the format or creative idea and show the shortlist recompute. The reasons and fit score update with the brief.
-5. Save the campaign and open it from **My briefs** to show the creator association. The Gemini starter remains available as a separate editable drafting tool when configured.
+5. Save the campaign and open it from **My briefs** to show the creator association. The Gemini starter remains a separate editable drafting tool when configured.
 6. Close with BridgeBuddy's complaint-resolution flow, then say which profile data is illustrative and what a real marketplace would need to verify.
 7. If time allows, open **Creator Pulse**, switch between the Creator and Brand perspectives, and use one article as the starting point for an original campaign brief.
 
