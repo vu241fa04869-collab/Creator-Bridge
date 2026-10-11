@@ -27,6 +27,7 @@
         <nav class="side-nav">
           <button class="nav-item is-active" data-view="explore"><span class="nav-icon">⌕</span> Explore creators</button>
           <button class="nav-item" data-view="coach"><span class="nav-icon">✳</span> Campaign coach</button>
+          <button class="nav-item" data-view="retail"><span class="nav-icon">▣</span> Retail pilot</button>
           <button class="nav-item" data-view="pulse"><span class="nav-icon">◷</span> Creator Pulse</button>
           <button class="nav-item" data-view="briefs"><span class="nav-icon">▤</span> My briefs <span class="nav-count" id="brief-count">0</span></button>
           <button class="nav-item" data-view="complaints"><span class="nav-icon">◉</span> Resolution studio</button>
@@ -90,6 +91,12 @@
             <button class="button coach-promo-button" id="open-coach" type="button">Open Campaign Coach <span>↗</span></button>
           </section>
 
+          <section class="retail-promo" aria-labelledby="retail-promo-title">
+            <span class="retail-promo-mark" aria-hidden="true">▣</span>
+            <div><span>RETAIL PILOT · INTERACTIVE DEMO</span><h2 id="retail-promo-title">Follow one product from creator idea to outcome.</h2><p>Choose a sample product, compare creator roles, and see how the next move changes with the result.</p></div>
+            <button class="button" id="open-retail-pilot" type="button">Explore the pilot <span>↗</span></button>
+          </section>
+
           <div class="discovery-title-row">
             <div><h2>Explore creators <span class="result-count" id="result-count">8</span></h2><p>Find the right talent for every kind of idea.</p></div>
             <label class="sort-control">Sort by <select id="sort-select" aria-label="Sort creators"><option value="featured">Featured</option><option value="name">Name A–Z</option><option value="projects">Most projects</option></select></label>
@@ -135,6 +142,48 @@
               <div class="coach-empty"><span class="coach-empty-mark">✳</span><span class="coach-kicker">YOUR CLARITY BOARD</span><h2>A useful diagnosis starts with one signal.</h2><p>Fill in the campaign goal and observation, then explore a few explanations and low-risk tests.</p><ol><li><span>01</span> Describe the outcome</li><li><span>02</span> Check the evidence</li><li><span>03</span> Test one change</li></ol></div>
             </section>
           </div>
+        </section>
+
+        <section id="retail-view" class="view hidden" aria-labelledby="retail-title">
+          <header class="retail-hero">
+            <div class="retail-hero-copy"><div class="eyebrow"><span class="eyebrow-line"></span> RETAIL PILOT LAB · BUYER WALKTHROUGH</div><h1 id="retail-title">One product.<br /><span>Different outcomes.</span></h1><p>Explore how a focused creator pilot can connect a product story to a measurable next test.</p></div>
+            <div class="retail-hero-art" aria-hidden="true"><span>PRODUCT</span><b>→</b><span>CREATOR</span><b>→</b><span>LEARNING</span><i>01 / 03</i></div>
+          </header>
+          <div class="retail-disclaimer" role="note"><span>DEMO ONLY</span><p>This is a fictional retail scenario. It is not a Walmart campaign, partnership, endorsement, integration, or real sales data. Creator roles and results are illustrative.</p></div>
+
+          <div class="retail-setup-grid">
+            <section class="retail-setup-card" aria-labelledby="retail-setup-title">
+              <div class="retail-section-kicker">01 — PICK THE PILOT</div><h2 id="retail-setup-title">Start with one item.</h2><p>Keep the first test small enough to learn from.</p>
+              <label class="retail-field" for="retail-product"><span>Fictional sample product</span><select id="retail-product"><option value="rain-shell">TrailLite rain shell · apparel</option><option value="fresh-keeper">FreshKeep storage set · home</option><option value="brightstart">BrightStart snack pack · grocery</option></select></label>
+              <label class="retail-field" for="retail-goal"><span>Campaign goal</span><select id="retail-goal"><option value="orders">Turn product-page visits into purchases</option><option value="feature">Make one product benefit easier to understand</option><option value="launch">Build awareness for a new product launch</option></select></label>
+              <div class="retail-audience"><span>DEMO AUDIENCE</span><strong id="retail-product-audience">Value-minded shoppers comparing outdoor gear</strong><small>Example audience only · confirm geography and targeting for a real campaign.</small></div>
+            </section>
+
+            <section class="retail-creators-card" aria-labelledby="retail-creators-title">
+              <div class="retail-section-kicker">02 — MATCH THE WORK</div><h2 id="retail-creators-title">Three creator roles to explore.</h2><p>These are skill-based examples, not real creator profiles or endorsements.</p>
+              <div class="retail-creator-list">
+                <article class="retail-creator"><span class="retail-creator-icon">01</span><div><strong>Product demo storyteller</strong><p>Shows the product solving one everyday need, with proof early in the video.</p><small>Ask for: relevant samples · audience location · usage rights</small></div></article>
+                <article class="retail-creator"><span class="retail-creator-icon coral">02</span><div><strong>Everyday-use creator</strong><p>Places the item in a familiar routine so shoppers can picture using it.</p><small>Ask for: audience fit · disclosure plan · availability</small></div></article>
+                <article class="retail-creator"><span class="retail-creator-icon blue">03</span><div><strong>Retail cutdown editor</strong><p>Creates a few short variations from approved footage for controlled testing.</p><small>Ask for: deliverables · revision terms · paid-media permissions</small></div></article>
+              </div>
+            </section>
+          </div>
+
+          <section class="retail-outcome-section" aria-labelledby="retail-outcomes-title">
+            <div class="retail-section-heading"><div><div class="retail-section-kicker">03 — SELECT A SAMPLE RESULT</div><h2 id="retail-outcomes-title">What happens next depends on the signal.</h2><p>Switch outcomes to see how the follow-up test changes.</p></div><span class="retail-simulated-tag">SIMULATED VALUES</span></div>
+            <div class="retail-outcome-tabs" role="group" aria-label="Choose a simulated campaign outcome">
+              <button class="is-active" type="button" data-retail-outcome="sales-gap" aria-pressed="true"><span>01</span> Views up · orders flat</button>
+              <button type="button" data-retail-outcome="promising" aria-pressed="false"><span>02</span> Clicks and orders rise</button>
+              <button type="button" data-retail-outcome="no-lift" aria-pressed="false"><span>03</span> No clear lift</button>
+            </div>
+            <div id="retail-outcome-result" aria-live="polite"></div>
+          </section>
+
+          <section class="retail-buyer-checks" aria-labelledby="retail-buyer-title">
+            <div class="retail-section-kicker">04 — WHAT A RETAIL BUYER WILL ASK</div><h2 id="retail-buyer-title">Make the pilot easy to trust.</h2>
+            <div class="retail-check-grid"><article><span>01 · PEOPLE</span><strong>Who is the creator?</strong><p>Verify identity, audience geography, relevant examples, availability, and brand-safety fit.</p></article><article><span>02 · RIGHTS</span><strong>What can the brand use?</strong><p>Agree on deliverables, disclosures, revisions, paid usage, licensing term, and approvals.</p></article><article><span>03 · PROOF</span><strong>How will success be measured?</strong><p>Confirm product links, inventory, baseline, attribution window, spend, and the source of each metric.</p></article></div>
+            <p class="retail-integration-note">This prototype does not connect to Walmart systems or private retailer data. A real pilot would need approved product information, creator consent, tracking, and the retailer’s security and procurement review.</p>
+          </section>
         </section>
 
         <section id="pulse-view" class="view hidden" aria-labelledby="pulse-title">
