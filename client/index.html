@@ -71,7 +71,7 @@
               <p>See who fits the format, creative direction, and tools your campaign needs.</p>
               <div class="match-flow" aria-label="Campaign idea to creator shortlist"><span>Campaign idea</span><b>→</b><span>Shared brief</span><b>→</b><span>Explainable matches</span></div>
             </div>
-            <button class="button button-match-demo" id="try-match-demo" type="button">Try the sample match <span>↗</span></button>
+            <div class="match-demo-actions"><button class="button button-match-demo" id="try-match-demo" type="button">Try the sample match <span>↗</span></button><button class="button button-tour-launch" id="start-guided-demo" type="button"><span>✦</span> Take the 90-second tour</button></div>
           </section>
 
           <div class="discovery-title-row">
@@ -168,6 +168,13 @@
     <div class="modal-backdrop hidden" id="modal-backdrop" role="presentation">
       <section class="modal" id="modal-content" role="dialog" aria-modal="true" aria-labelledby="modal-title"></section>
     </div>
+    <aside class="demo-tour hidden" id="demo-tour" role="region" aria-labelledby="demo-tour-title" aria-live="polite">
+      <div class="demo-tour-top"><span><i>✳</i> CREATORBRIDGE · GUIDED DEMO</span><button type="button" id="demo-tour-close" aria-label="End guided demo">×</button></div>
+      <div class="demo-tour-progress"><span id="demo-tour-count">01 / 04</span><span class="demo-tour-track"><i id="demo-tour-progress-fill"></i></span><span>90 SEC</span></div>
+      <h2 id="demo-tour-title">Meet the marketplace.</h2>
+      <p id="demo-tour-copy"></p>
+      <div class="demo-tour-bottom"><button type="button" class="demo-tour-exit" id="demo-tour-exit">End tour</button><div><button type="button" class="demo-tour-back" id="demo-tour-back">← Back</button><button type="button" class="demo-tour-next" id="demo-tour-next">Next step →</button></div></div>
+    </aside>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </body>
 </html>
