@@ -8,6 +8,7 @@ import { connectDatabase, databaseMode } from "./dataStore.js";
 import aiRouter from "./routes/ai.js";
 import briefsRouter from "./routes/briefs.js";
 import creatorsRouter from "./routes/creators.js";
+import newsRouter from "./routes/news.js";
 
 const app = express();
 const serverDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -22,6 +23,7 @@ app.use(express.json({ limit: "1mb" }));
 app.get("/api/health", (_req, res) => res.json({ ok: true, database: databaseMode(), ai: Boolean(process.env.GEMINI_API_KEY) }));
 app.use("/api/creators", creatorsRouter);
 app.use("/api/briefs", briefsRouter);
+app.use("/api/news", newsRouter);
 app.use("/api/ai", aiRouter);
 
 if (existsSync(staticDir)) {
