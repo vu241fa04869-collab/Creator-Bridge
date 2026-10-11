@@ -42,6 +42,15 @@ const rootCauseSteps = [
 let rootCauseState = { problem: "", causes: new Set(), evidence: new Set(), outcome: "", missing: "" };
 let rootCauseStep = 0;
 let demoTourStep = -1;
+let activeWorkspaceView = "explore";
+const clarityGuidance = {
+  explore:{step:"define",context:"Start with the outcome you need. Compare creator fit against their visible work and workflow.",detail:["Define the audience and change you want.","Use the blocker to decide which skill or format matters.","Treat sample portfolios and rates as illustrative until confirmed."]},
+  pulse:{step:"causes",context:"Treat an update as a signal, not a conclusion. Explore what may be changing before you decide it affects your campaign.",detail:["Name the question the update raises.","Consider possible effects on creators, brands, or platforms.","Keep a signal separate from a verified cause until you check the source."]},
+  profile:{step:"evidence",context:"Use the profile as evidence to inspect, not a guarantee. Check relevant work, workflow, availability, quote, and rights directly.",detail:["Compare sample work with the exact deliverable.","Ask how the creator will make and deliver the work.","Confirm portfolio ownership, availability, quote, revisions, and usage terms."]},
+  briefs:{step:"details",context:"Turn the diagnosis into a shared plan. Surface missing scope, evidence, budget, timing, and usage decisions.",detail:["Record the outcome and the obstacle behind the request.","Separate confirmed evidence from assumptions to test.","Agree on deliverables, budget, deadline, revisions, and rights before work starts."]},
+  complaints:{step:"solution",context:"Separate what happened from what might have caused it, check the records, then choose a fair next step.",detail:["Describe the gap between the agreement and what happened.","Explore more than one possible cause and check available records.","Ask for a practical next move, then note what still needs confirming."]},
+  brief:{step:"define",context:"A brief is clearer when it explains the desired outcome, the current blocker, what is known, and what remains open.",detail:["Describe the change or result you want.","Explain the blocker without assigning blame.","Mark assumptions as questions and list what should be confirmed before production."]}
+};
 const localBriefs = () => { try { return JSON.parse(localStorage.getItem("creatorbridge-briefs") || "[]"); } catch { return []; } };
 const briefs = () => remoteBriefs ?? localBriefs();
 async function apiRequest(path, options = {}) {
@@ -68,7 +77,7 @@ const typeFamilies = {
   branding: ["branding", "campaign"], editorial: ["editorial", "fashion"]
 };
 function briefFitMatches(brief) {
-  const idea = `${brief.idea || ""} ${brief.style || ""}`.toLowerCase();
+  const idea = `${brief.idea || ""} ${brief.style || ""} ${brief.challenge || ""}`.toLowerCase();
   const requestedTools = unique(creators.flatMap(creator => creator.tools)).filter(tool => idea.includes(tool.toLowerCase()));
   const requestedDirections = matchDirections.filter(direction => direction.request.test(idea));
   const requestedType = String(brief.type || brief.contentType || "").trim().toLowerCase();
@@ -125,15 +134,32 @@ function renderCreators(){
 function clearFilters(){$("#search-input").value="";["#specialty-filter","#tool-filter","#type-filter"].forEach(s=>$(s).value="");renderCreators();}
 window.clearFilters=clearFilters;
 
+function updateClarityMethod(view=activeWorkspaceView){
+  const guide=clarityGuidance[view]||clarityGuidance.explore;
+  $("#clarity-method-context").textContent=guide.context;
+  document.querySelectorAll("[data-clarity-step]").forEach(item=>{
+    const active=item.dataset.clarityStep===guide.step;
+    item.classList.toggle("is-current",active);
+    if(active)item.setAttribute("aria-current","step");else item.removeAttribute("aria-current");
+  });
+  const detail=$("#clarity-method-detail");
+  detail.replaceChildren();
+  const list=document.createElement("ol");
+  guide.detail.forEach(line=>{const item=document.createElement("li");item.textContent=line;list.append(item);});
+  detail.append(list);
+}
+
 function showModal(html){modal.innerHTML=html;backdrop.classList.remove("hidden");document.body.style.overflow="hidden";const first=modal.querySelector("button,input,select,textarea");if(first)first.focus();}
-function closeModal(){backdrop.classList.add("hidden");document.body.style.overflow="";modal.innerHTML="";}
+function closeModal(){backdrop.classList.add("hidden");document.body.style.overflow="";modal.innerHTML="";updateClarityMethod(activeWorkspaceView);}
 function profileModal(id){
   const c=byId(id);if(!c)return;
+  updateClarityMethod("profile");
   showModal(`<div class="profile-hero"><span class="creator-avatar" style="background:${c.palette[0]}55;color:${c.palette[1]}">${c.initials}</span><div><h3 id="modal-title">${escapeHtml(c.name)}${c.verified?'<i class="verified-mark" title="Creator-provided profile details">✓</i>':''}</h3><p>${escapeHtml(c.specialty)} · ${escapeHtml(c.location)}</p></div></div>
     <div class="profile-section"><h4>SELECTED WORK <span class="section-note">ILLUSTRATIVE DEMO CONCEPTS</span></h4><div class="portfolio-grid">${(c.portfolio||[]).map((work,index)=>`<article class="portfolio-tile" style="--cover-a:${c.palette[index%c.palette.length]};--cover-b:${c.palette[(index+1)%c.palette.length]}"><div class="portfolio-cover"><span>✳</span><small>CONCEPT ${index+1}</small></div><div class="portfolio-caption"><strong>${escapeHtml(work.title)}</strong><small>${escapeHtml(work.type)} · ${escapeHtml(work.tool)}</small></div></article>`).join("")}</div></div>
     <div class="profile-section"><h4>ABOUT</h4><p>${escapeHtml(c.bio)} This is a demo creator profile prepared for the hackathon prototype.</p><div class="profile-stats"><span><strong>${(c.portfolio||[]).length}</strong>Sample concepts</span><span><strong>${c.tools.length}</strong>AI tools listed</span><span><strong>₹${c.rate.toLocaleString("en-IN")}</strong>Illustrative rate</span></div></div>
     <div class="profile-section"><h4>TOOLS & SKILLS</h4><div class="tag-row">${[...c.tools,...c.skills].map(x=>`<span class="tag">${escapeHtml(x)}</span>`).join("")}</div></div>
     <div class="profile-section"><h4>WORKFLOW</h4><p>${escapeHtml(c.workflow)}</p></div>
+    <div class="profile-section creator-validation"><h4>CHECK THE FIT BEFORE YOU COMMIT</h4><ul><li>Compare the sample concepts with the exact deliverable you need.</li><li>Ask about availability, scope, revisions, and a written quote.</li><li>Agree on commercial usage, credit, and final-file handoff.</li></ul></div>
     <div class="profile-footer"><span class="disclaimer">Demo profile · Not independently verified</span><button class="button button-primary" data-start-brief="${c.id}">Invite to a brief ↗</button></div>`);
 }
 
@@ -142,6 +168,7 @@ async function refreshRemoteBriefs(){try{remoteBriefs=await apiRequest("/api/bri
 function updateBriefCount(){$("#brief-count").textContent=briefs().length;}
 function openBriefForm(creatorId="",options={}){
   const c=creatorId?byId(creatorId):null;
+  updateClarityMethod("brief");
   showModal(`<div class="modal-head"><div><h2 id="modal-title">${options.demo?"From one idea to a short list":"Create a campaign brief"}</h2><p>${options.demo?"A 20-second launch film · sample matching walkthrough":"Set the direction. Your creator brings it to life."}</p></div><button class="close-modal" data-close aria-label="Close">×</button></div>
     <form id="brief-form" class="modal-content"><div class="ai-assist"><div class="ai-assist-head"><span class="ai-star">✦</span><span><strong>AI brief starter</strong><small>Turn a rough idea into an editable campaign draft.</small></span></div><textarea id="ai-idea" placeholder="e.g. A launch film for a new running shoe that feels energetic and optimistic"></textarea><div class="ai-assist-actions"><span id="ai-status" role="status">Uses the server-side Gemini API key.</span><button class="button button-secondary" id="generate-ai" type="button">Generate draft ✦</button></div></div><div class="form-grid">
       <div class="form-field full"><label for="brief-title">Campaign title *</label><input id="brief-title" name="title" required placeholder="e.g. Summer launch film" /></div>
@@ -150,6 +177,7 @@ function openBriefForm(creatorId="",options={}){
       <div class="form-field"><label for="brief-style">Style or mood</label><input id="brief-style" name="style" placeholder="e.g. Warm, cinematic" /></div>
       <div class="form-field"><label for="brief-ratio">Aspect ratio</label><select id="brief-ratio" name="ratio"><option>9:16 · Vertical</option><option>1:1 · Square</option><option>4:5 · Portrait</option><option>16:9 · Landscape</option><option>Flexible</option></select></div>
       <div class="form-field full"><label for="brief-idea">The idea *</label><textarea id="brief-idea" name="idea" required placeholder="What are you making, and what should it make people feel or do?"></textarea></div>
+      <section class="brief-diagnosis form-field full" aria-labelledby="brief-diagnosis-title"><div class="brief-diagnosis-heading"><span>THINK IT THROUGH</span><h3 id="brief-diagnosis-title">A stronger brief starts with the reason.</h3><p>Optional notes help creators understand the need behind the deliverable. Separate what you know from what you still need to test.</p></div><div class="form-grid"><div class="form-field full"><label for="brief-challenge">What is the main blocker or opportunity?</label><textarea id="brief-challenge" name="challenge" maxlength="600" placeholder="e.g. People notice the product but do not understand what makes it different."></textarea></div><div class="form-field"><label for="brief-evidence">What do you know so far?</label><textarea id="brief-evidence" name="evidence" maxlength="600" placeholder="e.g. Feedback, past results, or audience questions."></textarea></div><div class="form-field"><label for="brief-unknowns">What should we confirm?</label><textarea id="brief-unknowns" name="unknowns" maxlength="600" placeholder="e.g. Which message or format resonates most?"></textarea></div></div></section>
       <div class="form-field"><label for="brief-budget">Budget (₹)</label><input id="brief-budget" name="budget" type="number" min="0" placeholder="Optional" /></div>
       <div class="form-field"><label for="brief-deadline">Target deadline</label><input id="brief-deadline" name="deadline" type="date" /></div>
       <div class="form-field full"><label class="check-field"><input name="commercial" type="checkbox" /> Commercial usage rights are required</label></div>
@@ -161,12 +189,17 @@ function openBriefForm(creatorId="",options={}){
     $("#brief-type").value="Video";
     $("#brief-style").value="Cinematic, hopeful, fast-moving; rain into sunrise.";
     $("#brief-idea").value="Create a 20-second vertical launch film for a sustainable running jacket. Follow a city runner through Mumbai monsoon rain into a bright sunrise. Make it cinematic and optimistic for Instagram Reels; use Runway and DaVinci Resolve for AI-assisted footage and editorial finishing.";
+    $("#brief-challenge").value="People notice the jacket, but do not yet understand its weather protection and sustainability story.";
+    $("#brief-evidence").value="The product team has heard repeated questions about rain performance and recycled materials.";
+    $("#brief-unknowns").value="Which proof point matters most to runners, and can we show it clearly in 20 seconds?";
     $("#ai-idea").value="A short cinematic, optimistic launch film for a sustainable running jacket, following a runner through monsoon rain into sunrise. Made for Instagram Reels.";
   }else if(options.news){
     const story=options.news;
     $("#brief-title").value=`Story signal: ${String(story.title||"").slice(0,56)}`;
     $("#brief-type").value="Campaign";
     $("#brief-idea").value=`Develop an original campaign inspired by this industry signal. Do not copy the article or its creative work.\n\nStory: ${story.title}\n${story.summary||""}\n\nSource: ${story.url}`;
+    $("#brief-evidence").value=`Signal to verify: ${story.source||"Publisher"} · ${story.title}`;
+    $("#brief-unknowns").value="Does this update change the needs of our specific audience or campaign? Check the publisher source before acting.";
     $("#ai-idea").value=`Draft an original campaign brief informed by this industry update: ${story.title}`;
   }
   $("#brief-form").addEventListener("input",renderMatchPreview);
@@ -176,14 +209,15 @@ $("#brief-title").focus();
 }
 function renderMatchPreview(){
   const form=$("#brief-form"),host=$("#match-preview");if(!form||!host)return;
-  const fields=new FormData(form),brief={idea:fields.get("idea"),style:fields.get("style"),type:fields.get("type"),budget:fields.get("budget")};
+  const fields=new FormData(form),brief={idea:fields.get("idea"),style:fields.get("style"),type:fields.get("type"),budget:fields.get("budget"),challenge:fields.get("challenge"),evidence:fields.get("evidence"),unknowns:fields.get("unknowns"),deadline:fields.get("deadline"),commercial:fields.has("commercial")};
   const selected=String(fields.get("creator")||"");
   const results=briefFitMatches(brief);
   if(!brief.idea?.trim()&&!brief.type&&!brief.style){host.innerHTML="";return;}
+  const openChecks=[!brief.challenge&&"main blocker",!brief.evidence&&"evidence",!brief.unknowns&&"open question",!brief.budget&&"budget",!brief.deadline&&"deadline",!brief.commercial&&"usage rights"].filter(Boolean);
   host.innerHTML=`<div class="match-results-head"><div><span class="match-eyebrow">CREATORBRIDGE MATCH EXPLAINER</span><h3>Three creators to explore</h3><p>Based on the format, tools, and creative direction in this brief.</p></div><button class="button button-match" id="find-matches" type="button">Refresh matches <span>↻</span></button></div><div class="match-method"><span>01 · Format</span><span>02 · Named tools</span><span>03 · Creative direction</span>${brief.budget?"<span>04 · Sample rate</span>":""}</div><div class="match-list">${results.map((item,index)=>{
     const creator=item.creator,isSelected=selected===creator.id;
     return `<article class="match-result-card${isSelected?" is-selected":""}"><span class="match-rank">0${index+1}</span><span class="match-avatar" style="--avatar:${creator.palette[0]};--ink:${creator.palette[1]}">${escapeHtml(creator.initials)}</span><div class="match-result-main"><div class="match-creator-line"><strong>${escapeHtml(creator.name)}</strong><span>${escapeHtml(creator.specialty)}</span></div><div class="match-reasons">${(item.reasons.length?item.reasons:["Related creative profile"]).map(reason=>`<span>${escapeHtml(reason)}</span>`).join("")}</div></div><div class="match-score"><strong>${item.score}%</strong><small>brief fit</small></div><button class="button button-select-match${isSelected?" selected":""}" type="button" data-select-match="${creator.id}" aria-pressed="${isSelected}">${isSelected?"Selected ✓":"Choose"}</button></article>`;
-  }).join("")}</div><p class="match-disclaimer">A transparent rules-based estimate, not an AI decision or guarantee. Demo profiles and rates are illustrative and unverified; confirm fit and pricing with creators.</p>`;
+  }).join("")}</div><div class="match-evidence-note"><strong>Before you choose</strong><span>${openChecks.length?`Still to clarify: ${openChecks.join(", ")}.`:`Your brief has the main decision details.`} Confirm the creator’s actual availability, quote, work samples, and rights directly.</span></div><p class="match-disclaimer">A transparent rules-based estimate, not an AI decision or guarantee. Demo profiles and rates are illustrative and unverified; confirm fit and pricing with creators.</p>`;
 }
 function pulsePerspective(article,lens){
   const perspectives={
@@ -228,14 +262,29 @@ async function loadPulse(force=false){
     $("#pulse-grid").innerHTML='<div class="pulse-empty"><span>↻</span><strong>News feeds could not be reached</strong><p>Use the direct publisher links below or try refreshing in a moment.</p></div>';
   }finally{pulseBusy=false;refresh.disabled=false;refresh.classList.remove("is-loading");}
 }
+function briefClarity(b){return [
+  {label:"goal",done:Boolean(b.idea?.trim())},
+  {label:"blocker",done:Boolean(b.challenge?.trim())},
+  {label:"evidence",done:Boolean(b.evidence?.trim())},
+  {label:"open question",done:Boolean(b.unknowns?.trim())},
+  {label:"budget",done:b.budget!==""&&b.budget!=null&&Number(b.budget)>0},
+  {label:"deadline",done:Boolean(b.deadline)},
+  {label:"usage rights",done:Boolean(b.commercialUse??b.commercial)}
+];}
+function showBriefReview(row){
+  const checks=briefClarity(row),next=checks.filter(item=>!item.done).map(item=>item.label);
+  const note=(value,label)=>`<div><span>${label}</span><p>${escapeHtml(value?.trim()||"Not captured yet")}</p></div>`;
+  showModal(`<div class="modal-head"><div><h2 id="modal-title">${escapeHtml(row.title)}</h2><p>${escapeHtml(row.brand)} · ${escapeHtml(row.contentType||row.type||"Campaign")} · Draft</p></div><button class="close-modal" data-close aria-label="Close">×</button></div><div class="modal-content brief-review"><div class="brief-review-summary"><span class="brief-review-count">${checks.filter(item=>item.done).length}/${checks.length}</span><div><strong>Clarity check</strong><p>${next.length?`Before work starts, clarify: ${escapeHtml(next.join(", "))}.`:"The core planning details are captured. Confirm them with your creator."}</p></div></div><section class="brief-review-section"><h3>THE REQUEST</h3>${note(row.idea,"Goal and idea")}${note(row.challenge,"Blocker or opportunity")}</section><section class="brief-review-section"><h3>WHAT WE KNOW</h3>${note(row.evidence,"Evidence so far")}${note(row.unknowns,"Question to confirm")}</section><section class="brief-review-section"><h3>DETAILS TO AGREE</h3><p>Format: ${escapeHtml(row.contentType||row.type||"Not specified")} · Style: ${escapeHtml(row.style||"Not specified")} · Ratio: ${escapeHtml(row.aspectRatio||row.ratio||"Flexible")}</p><p>Budget: ${row.budget?`₹${escapeHtml(row.budget)}`:"Not specified"} · Deadline: ${escapeHtml(row.deadline||"Not specified")} · Commercial usage: ${row.commercialUse??row.commercial?"Required":"Not specified"}</p><small>Confirm scope, revision rounds, usage rights, delivery date, and final-file handoff directly with the creator.</small></section></div>`);
+}
 function renderBriefs(){
   const items=briefs(), host=$("#brief-list");
   if(!items.length){host.innerHTML='<div class="brief-empty"><div class="empty-symbol">▤</div><h2>Your next idea starts here.</h2><p>Create a brief to give creators a clear starting point for your campaign.</p><button class="button button-primary" id="empty-create">＋ Create your first brief</button></div>';return;}
-  host.innerHTML=items.slice().reverse().map(b=>`<article class="brief-row"><div class="brief-main"><span class="brief-icon">▤</span><span><h3>${escapeHtml(b.title)}</h3><p>${escapeHtml(b.brand)} · ${escapeHtml(b.type)}${b.creator?` · For ${escapeHtml(byId(b.creator)?.name||"creator")}`:""}</p></span></div><div class="brief-meta"><span>${escapeHtml(b.createdAt)}</span><span class="status-pill">Draft</span><button class="view-profile" data-brief="${escapeHtml(b.id)}">View ↗</button></div></article>`).join("");
+  host.innerHTML=items.slice().reverse().map(b=>{const checks=briefClarity(b),open=checks.find(item=>!item.done);return `<article class="brief-row"><div class="brief-main"><span class="brief-icon">▤</span><span><h3>${escapeHtml(b.title)}</h3><p>${escapeHtml(b.brand)} · ${escapeHtml(b.contentType||b.type||"Campaign")}${b.creator?` · For ${escapeHtml(byId(b.creator)?.name||"creator")}`:""}</p><span class="brief-health"><strong>${checks.filter(item=>item.done).length}/${checks.length}</strong> clarity signals captured</span><small class="brief-next-check">${open?`Next to clarify: ${escapeHtml(open.label.toLowerCase())}`:"Review the agreement with your creator before work starts."}</small></span></div><div class="brief-meta"><span>${escapeHtml(b.createdAt)}</span><span class="status-pill">Draft</span><button class="view-profile" data-brief="${escapeHtml(b.id)}">Review ↗</button></div></article>`;}).join("");
 }
 function showView(name){
   const views={explore:"#explore-view",pulse:"#pulse-view",briefs:"#briefs-view",complaints:"#complaints-view"};
   Object.entries(views).forEach(([key,selector])=>$(selector).classList.toggle("hidden",key!==name));
+  activeWorkspaceView=name;updateClarityMethod(name);
   document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("is-active",b.dataset.view===name));
   $("#breadcrumb-current").textContent={explore:"Explore creators",pulse:"Creator Pulse",briefs:"My briefs",complaints:"Resolution studio"}[name]||"Explore creators";
   if(name==="briefs")renderBriefs();
@@ -389,7 +438,8 @@ async function sendComplaint(message,context=null){
   }finally{complaintBusy=false;$("#complaint-send").disabled=false;$("#complaint-input").disabled=false;$("#complaint-input").focus();}
 }
 
-populateFilters();renderCreators();updateBriefCount();
+populateFilters();renderCreators();updateBriefCount();updateClarityMethod("explore");
+$("#clarity-method-toggle").addEventListener("click",event=>{const button=event.currentTarget,detail=$("#clarity-method-detail"),open=detail.classList.toggle("hidden");button.setAttribute("aria-expanded",String(!open));button.innerHTML=open?'How it works <span aria-hidden="true">＋</span>':'Hide guide <span aria-hidden="true">−</span>';});
 async function hydrateFromApi(){
   try{setServiceStatus(await apiRequest("/api/health"));}catch{setServiceStatus(null);}
   try{const records=await apiRequest("/api/creators");if(Array.isArray(records)&&records.length){creators=records;document.querySelectorAll("#specialty-filter option:not(:first-child),#tool-filter option:not(:first-child),#type-filter option:not(:first-child)").forEach(option=>option.remove());populateFilters();renderCreators();}}
@@ -441,10 +491,10 @@ modal.addEventListener("click",async event=>{
 });
 modal.addEventListener("submit",event=>{
   if(event.target.id!=="brief-form")return;event.preventDefault();const form=new FormData(event.target);const entries=Object.fromEntries(form.entries());
-  const row={title:entries.title.trim(),brand:entries.brand.trim(),contentType:entries.type,type:entries.type,style:entries.style.trim(),aspectRatio:entries.ratio,ratio:entries.ratio,idea:entries.idea.trim(),budget:entries.budget,deadline:entries.deadline,commercialUse:form.has("commercial"),commercial:form.has("commercial"),creator:entries.creator||""};
+  const row={title:entries.title.trim(),brand:entries.brand.trim(),contentType:entries.type,type:entries.type,style:entries.style.trim(),aspectRatio:entries.ratio,ratio:entries.ratio,idea:entries.idea.trim(),challenge:entries.challenge.trim(),evidence:entries.evidence.trim(),unknowns:entries.unknowns.trim(),budget:entries.budget,deadline:entries.deadline,commercialUse:form.has("commercial"),commercial:form.has("commercial"),creator:entries.creator||""};
   const submit=async()=>{try{const saved=await apiRequest("/api/briefs",{method:"POST",body:JSON.stringify(row)});remoteBriefs=[...briefs(),saved];saveBriefs(remoteBriefs);closeModal();showView("briefs");notify("Campaign brief saved to the project database.");}catch{const all=[...localBriefs(),{...row,id:String(Date.now()),createdAt:new Date().toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}];remoteBriefs=null;saveBriefs(all);closeModal();showView("briefs");notify("Saved in this browser. Start the API to sync briefs.");}};
   submit();
 });
-$("#brief-list").addEventListener("click",event=>{if(event.target.id==="empty-create")openBriefForm();const button=event.target.closest("[data-brief]");if(button){const row=briefs().find(b=>b.id===button.dataset.brief);if(row)showModal(`<div class="modal-head"><div><h2 id="modal-title">${escapeHtml(row.title)}</h2><p>${escapeHtml(row.brand)} · ${escapeHtml(row.type)} · Draft</p></div><button class="close-modal" data-close aria-label="Close">×</button></div><div class="modal-content"><div class="form-grid"><div class="profile-section"><h4>THE IDEA</h4><p>${escapeHtml(row.idea)}</p></div><div class="profile-section"><h4>CREATIVE DIRECTION</h4><p>${escapeHtml(row.style||"Not specified")} · ${escapeHtml(row.ratio)}</p></div><div class="profile-section"><h4>DETAILS</h4><p>Budget: ${row.budget?`₹${escapeHtml(row.budget)}`:"Not specified"}<br>Deadline: ${escapeHtml(row.deadline||"Not specified")}<br>Commercial rights: ${row.commercial?"Required":"Not specified"}</p></div></div></div>`);}});
+$("#brief-list").addEventListener("click",event=>{if(event.target.id==="empty-create")openBriefForm();const button=event.target.closest("[data-brief]");if(button){const row=briefs().find(b=>b.id===button.dataset.brief);if(row)showBriefReview(row);}});
 document.addEventListener("keydown",event=>{if(event.key!=="Escape")return;if(demoTourStep>=0){if(!backdrop.classList.contains("hidden"))closeModal();endGuidedDemo(false);return;}if(!backdrop.classList.contains("hidden"))closeModal();});
 
