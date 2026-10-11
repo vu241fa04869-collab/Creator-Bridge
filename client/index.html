@@ -147,6 +147,23 @@
                 <button class="scenario-card" data-scenario="Communication" data-message="I need help resolving a communication issue. I have tried to contact them by: "><span class="scenario-icon icon-sand">◎</span><span><strong>Communication</strong><small>It’s hard to get a clear response</small></span><span class="scenario-arrow">↗</span></button>
                 <button class="scenario-card" data-scenario="Rights or policy" data-message="I need help with a usage-rights or policy concern. The work or agreement is: "><span class="scenario-icon icon-blue">⌘</span><span><strong>Rights or policy</strong><small>Usage, credit, or platform rules are unclear</small></span><span class="scenario-arrow">↗</span></button>
               </div>
+              <section class="root-cause-guide" aria-labelledby="root-cause-heading">
+                <div class="root-cause-head">
+                  <div><span class="root-cause-eyebrow">A 5-STEP CLARITY MAP</span><h3 id="root-cause-heading">Find the real blocker</h3></div>
+                  <button type="button" id="root-cause-toggle" aria-expanded="false" aria-controls="root-cause-panel">Start check <span aria-hidden="true">↗</span></button>
+                </div>
+                <div class="root-cause-panel hidden" id="root-cause-panel">
+                  <div class="root-cause-progress" id="root-cause-progress" role="group" aria-label="Root-cause steps"></div>
+                  <div class="root-cause-stage" aria-live="polite">
+                    <span class="root-cause-step-label" id="root-cause-step-label"></span>
+                    <h4 id="root-cause-step-title"></h4>
+                    <p id="root-cause-step-prompt"></p>
+                    <div class="root-cause-fields" id="root-cause-fields"></div>
+                    <small class="root-cause-hint" id="root-cause-hint">Skip anything you’re not sure about yet.</small>
+                  </div>
+                  <div class="root-cause-actions"><button type="button" id="root-cause-back">← Back</button><button type="button" id="root-cause-next">Next step →</button></div>
+                </div>
+              </section>
               <div class="resolution-principles"><span class="principle-mark">✳</span><div><strong>Facts first. Fairness always.</strong><p>BridgeBuddy helps you organize the issue and communicate clearly. You decide what to send.</p></div></div>
             </aside>
             <section class="complaint-chat" aria-label="BridgeBuddy complaint resolver">
