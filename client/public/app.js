@@ -32,6 +32,7 @@ let remoteBriefs = null;
 let toastTimer;
 let complaintHistory = [];
 let complaintBusy = false;
+let demoTourStep = -1;
 const localBriefs = () => { try { return JSON.parse(localStorage.getItem("creatorbridge-briefs") || "[]"); } catch { return []; } };
 const briefs = () => remoteBriefs ?? localBriefs();
 async function apiRequest(path, options = {}) {
@@ -230,8 +231,42 @@ function showView(name){
   $("#breadcrumb-current").textContent={explore:"Explore creators",pulse:"Creator Pulse",briefs:"My briefs",complaints:"Resolution studio"}[name]||"Explore creators";
   if(name==="briefs")renderBriefs();
   if(name==="pulse")loadPulse();
-  if(name==="complaints")setTimeout(()=>$("#complaint-input")?.focus(),0);
+  if(name==="complaints"&&demoTourStep!==3)setTimeout(()=>$("#complaint-input")?.focus(),0);
 }
+const guidedDemoSteps=[
+  {view:"explore",target:"#match-demo-title",title:"Meet the marketplace.",copy:"Start with a campaign idea and explore creator profiles. The included portfolios and rates are clearly labeled demo concepts, so viewers know what is sample data.",next:"See live signals"},
+  {view:"pulse",target:"#pulse-title",title:"Read the latest signal.",copy:"Creator Pulse brings recent publisher headlines into the workspace. Show the creator or brand perspective, then open a source to verify the story.",next:"Build a sample brief"},
+  {view:"brief",target:"#match-preview",title:"Turn an idea into a brief.",copy:"This editable sample brief produces a shortlist with visible fit reasons. The walkthrough does not call Gemini, save the draft, or change your briefs.",next:"Meet BridgeBuddy"},
+  {view:"complaints",target:"#complaint-title",title:"Resolve friction with care.",copy:"BridgeBuddy can organize a concern into a calm next step and an editable message. Choose a scenario to explore; the tour will not send anything.",next:"Finish tour"}
+];
+function clearGuidedDemoTarget(){document.querySelectorAll(".demo-tour-highlight").forEach(element=>element.classList.remove("demo-tour-highlight"));}
+function endGuidedDemo(closeDraft=true){
+  demoTourStep=-1;clearGuidedDemoTarget();$("#demo-tour").classList.add("hidden");
+  if(closeDraft&&!backdrop.classList.contains("hidden"))closeModal();
+}
+function renderGuidedDemo(){
+  const step=guidedDemoSteps[demoTourStep];if(!step)return;
+  clearGuidedDemoTarget();
+  if(step.view==="brief"){
+    showView("explore");openBriefForm("",{demo:true});
+  }else{
+    if(!backdrop.classList.contains("hidden"))closeModal();
+    showView(step.view);
+  }
+  const tour=$("#demo-tour");
+  $("#demo-tour-count").textContent=`0${demoTourStep+1} / 04`;
+  $("#demo-tour-progress-fill").style.width=`${((demoTourStep+1)/guidedDemoSteps.length)*100}%`;
+  $("#demo-tour-title").textContent=step.title;
+  $("#demo-tour-copy").textContent=step.copy;
+  $("#demo-tour-back").disabled=demoTourStep===0;
+  $("#demo-tour-next").textContent=demoTourStep===guidedDemoSteps.length-1?"Finish tour ✓":"Next: "+step.next+" →";
+  tour.classList.remove("hidden");
+  const target=$(step.target);
+  if(target){target.classList.add("demo-tour-highlight");requestAnimationFrame(()=>target.scrollIntoView({behavior:"smooth",block:"center",inline:"nearest"}));}
+  if(step.view==="pulse")loadPulse();
+  $("#demo-tour-next").focus({preventScroll:true});
+}
+function startGuidedDemo(){demoTourStep=0;renderGuidedDemo();}
 function notify(message){const toast=$("#toast");toast.textContent=message;toast.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove("show"),2400);}
 
 function setServiceStatus(health){
@@ -307,7 +342,12 @@ document.querySelectorAll("#complaint-suggestions [data-prompt]").forEach(button
 $("#creator-grid").addEventListener("click",event=>{const button=event.target.closest("[data-profile]");if(button)profileModal(button.dataset.profile)});
 $("#create-brief-top").addEventListener("click",()=>openBriefForm());$("#create-brief-list").addEventListener("click",()=>openBriefForm());$("#sidebar-create").addEventListener("click",()=>openBriefForm());
 $("#try-match-demo").addEventListener("click",()=>openBriefForm("",{demo:true}));
-backdrop.addEventListener("click",event=>{if(event.target===backdrop||event.target.closest("[data-close]"))closeModal();});
+$("#start-guided-demo").addEventListener("click",startGuidedDemo);
+$("#demo-tour-close").addEventListener("click",()=>endGuidedDemo());
+$("#demo-tour-exit").addEventListener("click",()=>endGuidedDemo());
+$("#demo-tour-back").addEventListener("click",()=>{if(demoTourStep>0){demoTourStep--;renderGuidedDemo();}});
+$("#demo-tour-next").addEventListener("click",()=>{if(demoTourStep>=guidedDemoSteps.length-1){endGuidedDemo();return;}demoTourStep++;renderGuidedDemo();});
+backdrop.addEventListener("click",event=>{if(event.target===backdrop||event.target.closest("[data-close]")){closeModal();if(demoTourStep===2)endGuidedDemo(false);}});
 modal.addEventListener("click",event=>{
   const invite=event.target.closest("[data-start-brief]");if(invite){const id=invite.dataset.startBrief;closeModal();openBriefForm(id);return;}
   const choice=event.target.closest("[data-select-match]");if(choice){const field=$("#brief-form [name=creator]");if(field){field.value=choice.dataset.selectMatch;renderMatchPreview();notify(`${byId(choice.dataset.selectMatch)?.name||"Creator"} added to the brief.`);}return;}
@@ -332,5 +372,5 @@ modal.addEventListener("submit",event=>{
   submit();
 });
 $("#brief-list").addEventListener("click",event=>{if(event.target.id==="empty-create")openBriefForm();const button=event.target.closest("[data-brief]");if(button){const row=briefs().find(b=>b.id===button.dataset.brief);if(row)showModal(`<div class="modal-head"><div><h2 id="modal-title">${escapeHtml(row.title)}</h2><p>${escapeHtml(row.brand)} · ${escapeHtml(row.type)} · Draft</p></div><button class="close-modal" data-close aria-label="Close">×</button></div><div class="modal-content"><div class="form-grid"><div class="profile-section"><h4>THE IDEA</h4><p>${escapeHtml(row.idea)}</p></div><div class="profile-section"><h4>CREATIVE DIRECTION</h4><p>${escapeHtml(row.style||"Not specified")} · ${escapeHtml(row.ratio)}</p></div><div class="profile-section"><h4>DETAILS</h4><p>Budget: ${row.budget?`₹${escapeHtml(row.budget)}`:"Not specified"}<br>Deadline: ${escapeHtml(row.deadline||"Not specified")}<br>Commercial rights: ${row.commercial?"Required":"Not specified"}</p></div></div></div>`);}});
-document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!backdrop.classList.contains("hidden"))closeModal();});
+document.addEventListener("keydown",event=>{if(event.key!=="Escape")return;if(demoTourStep>=0){if(!backdrop.classList.contains("hidden"))closeModal();endGuidedDemo(false);return;}if(!backdrop.classList.contains("hidden"))closeModal();});
 
