@@ -33,6 +33,55 @@ let latestCoachPlan = null;
 let toastTimer;
 let complaintHistory = [];
 let complaintBusy = false;
+const retailProducts = {
+  "rain-shell": { name:"TrailLite rain shell", audience:"Value-minded shoppers comparing outdoor gear", category:"Outdoor apparel" },
+  "fresh-keeper": { name:"FreshKeep storage set", audience:"Households looking for practical kitchen storage", category:"Home essentials" },
+  brightstart: { name:"BrightStart snack pack", audience:"Busy families comparing everyday lunchbox options", category:"Grocery" }
+};
+const retailGoals = {
+  orders:"Turn product-page visits into purchases",
+  feature:"Make one product benefit easier to understand",
+  launch:"Build awareness for a new product launch"
+};
+const retailOutcomes = {
+  "sales-gap": {
+    label:"Strong attention · weak order signal",
+    summary:"People noticed the story and visited the item page, but the sample purchase count stayed level with the comparison.",
+    metrics:[["12.4K","video views"],["248","item-page clicks"],["3","orders · 3 comparison"],["0%","sample order change"]],
+    read:"Attention carried through to product-page visits, but this sample does not show additional orders. The product page, offer, inventory, delivery promise, or attribution may be part of the gap; views alone cannot identify the cause.",
+    change:"Move the clearest product proof into the opening, then link directly to the exact item page. Keep audience, offer, and placement the same.",
+    measure:"Item-page visit → order rate, with a matched comparison and the same attribution window.",
+    guardrail:"Check item availability, price, delivery promise, and tracking before judging the creator or increasing spend.",
+    briefChallenge:"The sample content drew attention and product-page visits, but the order count did not rise versus the comparison.",
+    briefEvidence:"Illustrative only: 12.4K views, 248 item-page clicks, and 3 orders versus 3 comparison orders. These are simulated values, not retailer data.",
+    briefUnknown:"Was the product proof clear, was the item in stock, and did the product page continue the promise? Confirm tracking and compare order rate before changing the creator."
+  },
+  promising: {
+    label:"More clicks · promising order signal",
+    summary:"The sample version with a clearer product demonstration earned more item-page visits and orders than its comparison. It still needs validation.",
+    metrics:[["11.8K","video views"],["312","item-page clicks"],["21","orders · 16 comparison"],["+31%","sample order change"]],
+    read:"The difference is worth investigating, not proof that the creative caused the lift. Confirm comparable reach, spend, stock, pricing, and attribution before drawing a conclusion.",
+    change:"Repeat the same product-proof approach with one additional approved item while keeping the audience and placement stable.",
+    measure:"Incremental orders versus a matched baseline; include spend and margin before reporting return on investment.",
+    guardrail:"Do not describe this sample as measured lift or ROAS. Replicate with verified campaign data before scaling.",
+    briefChallenge:"A sample creative variant outperformed its comparison on clicks and orders; confirm the difference can be repeated.",
+    briefEvidence:"Illustrative only: 11.8K views, 312 item-page clicks, and 21 orders versus 16 comparison orders. These are simulated values, not retailer data.",
+    briefUnknown:"Were audience, spend, stock, price, placement, and attribution comparable? Can the signal repeat on another item?"
+  },
+  "no-lift": {
+    label:"No clear movement yet",
+    summary:"The sample result is close to its comparison. That may mean the test was weak, too small, or not yet informative.",
+    metrics:[["12.1K","video views"],["92","item-page clicks"],["2","orders · 2 comparison"],["0%","sample order change"]],
+    read:"There is no clear difference in this sample. A small or noisy result does not prove the idea cannot work; first locate where the journey loses people and check whether enough qualified traffic arrived.",
+    change:"Test two different opening hooks while keeping the offer, product page, audience, and placement fixed.",
+    measure:"Qualified item-page clicks per view, then follow the same audience through to orders.",
+    guardrail:"Set a minimum sample and run window in advance. Avoid changing multiple parts of the campaign at once.",
+    briefChallenge:"The sample result did not move meaningfully versus its comparison; locate the earliest weak step before changing the whole campaign.",
+    briefEvidence:"Illustrative only: 12.1K views, 92 item-page clicks, and 2 orders versus 2 comparison orders. These are simulated values, not retailer data.",
+    briefUnknown:"Was reach large enough, did the right audience see the content, and which opening hook earns qualified product-page visits?"
+  }
+};
+let retailPilotState = { product:"rain-shell", goal:"orders", outcome:"sales-gap" };
 const rootCauseSteps = [
   { short: "Issue", title: "Define the problem", prompt: "What was agreed, and what happened instead?", key: "problem", type: "text", placeholder: "A short, factual summary…" },
   { short: "Causes", title: "Explore possible causes", prompt: "What might explain the gap? Select any possibilities to check.", key: "causes", type: "multi", options: ["The brief or deliverable was unclear", "A deadline or approval was missed", "The scope changed after agreement", "A payment or refund is still processing", "A message, file, or asset is missing", "I’m not sure yet"] },
@@ -47,6 +96,7 @@ let activeWorkspaceView = "explore";
 const clarityGuidance = {
   explore:{step:"define",context:"Start with the outcome you need. Compare creator fit against their visible work and workflow.",detail:["Define the audience and change you want.","Use the blocker to decide which skill or format matters.","Treat sample portfolios and rates as illustrative until confirmed."]},
   coach:{step:"causes",context:"Read campaign outcomes as signals. Compare possible explanations with evidence, then test one change at a time.",detail:["Separate what you observed from what you think caused it.","Check the next available metric in the campaign path.","Change one variable and compare a fair baseline before deciding."]},
+  retail:{step:"evidence",context:"Connect a product, creator fit, and outcome. Treat every sample metric as illustrative until a real pilot can verify it.",detail:["Start with one product and one measurable goal.","Confirm creator fit, audience, disclosures, and usage rights.","Compare the result with a fair baseline before scaling."]},
   pulse:{step:"causes",context:"Treat an update as a signal, not a conclusion. Explore what may be changing before you decide it affects your campaign.",detail:["Name the question the update raises.","Consider possible effects on creators, brands, or platforms.","Keep a signal separate from a verified cause until you check the source."]},
   profile:{step:"evidence",context:"Use the profile as evidence to inspect, not a guarantee. Check relevant work, workflow, availability, quote, and rights directly.",detail:["Compare sample work with the exact deliverable.","Ask how the creator will make and deliver the work.","Confirm portfolio ownership, availability, quote, revisions, and usage terms."]},
   briefs:{step:"details",context:"Turn the diagnosis into a shared plan. Surface missing scope, evidence, budget, timing, and usage decisions.",detail:["Record the outcome and the obstacle behind the request.","Separate confirmed evidence from assumptions to test.","Agree on deliverables, budget, deadline, revisions, and rights before work starts."]},
@@ -295,12 +345,38 @@ function renderBriefs(){
   if(!items.length){host.innerHTML='<div class="brief-empty"><div class="empty-symbol">▤</div><h2>Your next idea starts here.</h2><p>Create a brief to give creators a clear starting point for your campaign.</p><button class="button button-primary" id="empty-create">＋ Create your first brief</button></div>';return;}
   host.innerHTML=items.slice().reverse().map(b=>{const checks=briefClarity(b),open=checks.find(item=>!item.done);return `<article class="brief-row"><div class="brief-main"><span class="brief-icon">▤</span><span><h3>${escapeHtml(b.title)}</h3><p>${escapeHtml(b.brand)} · ${escapeHtml(b.contentType||b.type||"Campaign")}${b.creator?` · For ${escapeHtml(byId(b.creator)?.name||"creator")}`:""}</p><span class="brief-health"><strong>${checks.filter(item=>item.done).length}/${checks.length}</strong> clarity signals captured</span><small class="brief-next-check">${open?`Next to clarify: ${escapeHtml(open.label.toLowerCase())}`:"Review the agreement with your creator before work starts."}</small></span></div><div class="brief-meta"><span>${escapeHtml(b.createdAt)}</span><span class="status-pill">Draft</span><button class="view-profile" data-brief="${escapeHtml(b.id)}">Review ↗</button></div></article>`;}).join("");
 }
+function renderRetailOutcome(){
+  const product=retailProducts[retailPilotState.product]||retailProducts["rain-shell"];
+  const outcome=retailOutcomes[retailPilotState.outcome]||retailOutcomes["sales-gap"];
+  $("#retail-product-audience").textContent=product.audience;
+  $("#retail-outcome-result").innerHTML='<article class="retail-result-card"><header class="retail-result-head"><div><span>SIMULATED RESULT · '+escapeHtml(product.name)+' · '+escapeHtml(retailGoals[retailPilotState.goal])+'</span><h3>'+escapeHtml(outcome.label)+'</h3><p>'+escapeHtml(outcome.summary)+'</p></div><span class="retail-sample-stamp">SAMPLE<br>ONLY</span></header><div class="retail-metric-grid">'+outcome.metrics.map(metric=>'<div class="retail-metric"><strong>'+escapeHtml(metric[0])+'</strong><span>'+escapeHtml(metric[1])+'</span></div>').join("")+'</div><div class="retail-readout-grid"><article><span>WHAT THIS SIGNAL MAY MEAN</span><p>'+escapeHtml(outcome.read)+'</p></article><article class="retail-next-test"><span>ONE CONTROLLED NEXT TEST</span><p><strong>Change</strong>'+escapeHtml(outcome.change)+'</p><p><strong>Measure</strong>'+escapeHtml(outcome.measure)+'</p><p><strong>Guardrail</strong>'+escapeHtml(outcome.guardrail)+'</p></article></div><div class="retail-result-foot"><p>All values above are invented for this walkthrough. No Walmart or customer data is connected.</p><button class="button retail-brief-button" id="retail-create-brief" type="button">Turn this into a draft brief <span>↗</span></button></div></article>';
+}
+function openRetailDemoBrief(){
+  const product=retailProducts[retailPilotState.product]||retailProducts["rain-shell"];
+  const outcome=retailOutcomes[retailPilotState.outcome]||retailOutcomes["sales-gap"];
+  const goal=retailGoals[retailPilotState.goal]||retailGoals.orders;
+  openBriefForm("",{demo:true});
+  $("#modal-title").textContent="Retail pilot · draft brief";
+  $("#modal-title").parentElement.querySelector("p").textContent="Illustrative scenario · review and edit before saving.";
+  $("#brief-title").value="Retail pilot · "+product.name;
+  $("#brand-name").value="Retail pilot demo · fictional";
+  $("#brief-type").value="Video";
+  $("#brief-style").value="Clear product proof, an everyday use case, and one controlled creative test.";
+  $("#brief-idea").value=["Product: "+product.name+" ("+product.category+"; fictional demo item)","Goal: "+goal,"Audience: "+product.audience,"Next experiment: "+outcome.change,"Measure: "+outcome.measure].join("\n\n");
+  $("#brief-challenge").value=outcome.briefChallenge;
+  $("#brief-evidence").value=outcome.briefEvidence;
+  $("#brief-unknowns").value=outcome.briefUnknown;
+  $("#ai-idea").value="Draft an editable retail creator pilot brief for the fictional sample product "+product.name+". Goal: "+goal+". Include one controlled experiment and a measurable baseline. Do not claim sample results are real.";
+  renderMatchPreview();
+  $("#brief-title").focus();
+}
 function showView(name){
-  const views={explore:"#explore-view",coach:"#coach-view",pulse:"#pulse-view",briefs:"#briefs-view",complaints:"#complaints-view"};
+  const views={explore:"#explore-view",coach:"#coach-view",retail:"#retail-view",pulse:"#pulse-view",briefs:"#briefs-view",complaints:"#complaints-view"};
   Object.entries(views).forEach(([key,selector])=>$(selector).classList.toggle("hidden",key!==name));
   activeWorkspaceView=name;updateClarityMethod(name);
   document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("is-active",b.dataset.view===name));
-  $("#breadcrumb-current").textContent={explore:"Explore creators",coach:"Campaign coach",pulse:"Creator Pulse",briefs:"My briefs",complaints:"Resolution studio"}[name]||"Explore creators";
+  $("#breadcrumb-current").textContent={explore:"Explore creators",coach:"Campaign coach",retail:"Retail pilot",pulse:"Creator Pulse",briefs:"My briefs",complaints:"Resolution studio"}[name]||"Explore creators";
+  if(name==="retail")renderRetailOutcome();
   if(name==="briefs")renderBriefs();
   if(name==="pulse")loadPulse();
   if(name==="complaints"&&demoTourStep!==3)setTimeout(()=>$("#complaint-input")?.focus(),0);
@@ -513,6 +589,15 @@ document.querySelector(".pulse-lens").addEventListener("click",event=>{const but
 $("#pulse-grid").addEventListener("click",event=>{const button=event.target.closest("[data-pulse-brief]");if(!button)return;const article=pulseArticles[Number(button.dataset.pulseBrief)];if(article)openBriefForm("",{news:article});});
 $("#open-complaint-studio").addEventListener("click",()=>showView("complaints"));
 $("#open-coach").addEventListener("click",()=>showView("coach"));
+$("#open-retail-pilot").addEventListener("click",()=>showView("retail"));
+$("#retail-product").addEventListener("change",event=>{retailPilotState.product=event.target.value;renderRetailOutcome();});
+$("#retail-goal").addEventListener("change",event=>{retailPilotState.goal=event.target.value;renderRetailOutcome();});
+document.querySelectorAll("[data-retail-outcome]").forEach(button=>button.addEventListener("click",()=>{
+  retailPilotState.outcome=button.dataset.retailOutcome;
+  document.querySelectorAll("[data-retail-outcome]").forEach(item=>{const active=item===button;item.classList.toggle("is-active",active);item.setAttribute("aria-pressed",String(active));});
+  renderRetailOutcome();
+}));
+$("#retail-outcome-result").addEventListener("click",event=>{if(event.target.closest("#retail-create-brief"))openRetailDemoBrief();});
 $("#coach-form").addEventListener("submit",analyzeCampaign);
 $("#coach-sample").addEventListener("click",()=>{
   $("#coach-goal").value="Get qualified product visits and first orders for a sustainable running jacket";
