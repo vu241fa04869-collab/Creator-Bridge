@@ -26,6 +26,7 @@
         <div class="workspace-label">WORKSPACE</div>
         <nav class="side-nav">
           <button class="nav-item is-active" data-view="explore"><span class="nav-icon">⌕</span> Explore creators</button>
+          <button class="nav-item" data-view="coach"><span class="nav-icon">✳</span> Campaign coach</button>
           <button class="nav-item" data-view="pulse"><span class="nav-icon">◷</span> Creator Pulse</button>
           <button class="nav-item" data-view="briefs"><span class="nav-icon">▤</span> My briefs <span class="nav-count" id="brief-count">0</span></button>
           <button class="nav-item" data-view="complaints"><span class="nav-icon">◉</span> Resolution studio</button>
@@ -83,6 +84,12 @@
             <div class="match-demo-actions"><button class="button button-match-demo" id="try-match-demo" type="button">Try the sample match <span>↗</span></button><button class="button button-tour-launch" id="start-guided-demo" type="button"><span>✦</span> Take the 90-second tour</button></div>
           </section>
 
+          <section class="coach-promo" aria-labelledby="coach-promo-title">
+            <div class="coach-promo-mark" aria-hidden="true">↗</div>
+            <div><span class="coach-kicker">WHEN A CAMPAIGN MISSES THE MARK</span><h2 id="coach-promo-title">Find a testable next move.</h2><p>Separate what you observed from what might explain it, then choose one result to measure.</p></div>
+            <button class="button coach-promo-button" id="open-coach" type="button">Open Campaign Coach <span>↗</span></button>
+          </section>
+
           <div class="discovery-title-row">
             <div><h2>Explore creators <span class="result-count" id="result-count">8</span></h2><p>Find the right talent for every kind of idea.</p></div>
             <label class="sort-control">Sort by <select id="sort-select" aria-label="Sort creators"><option value="featured">Featured</option><option value="name">Name A–Z</option><option value="projects">Most projects</option></select></label>
@@ -98,6 +105,35 @@
               <div class="filter-tip"><span>✦</span><p><strong>Start with the real need.</strong><br />Name the outcome, the blocker, and what you can verify. Your brief turns those facts into a clearer creator fit.</p></div>
             </section>
             <div class="creator-grid" id="creator-grid" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <section id="coach-view" class="view hidden" aria-labelledby="coach-title">
+          <header class="coach-hero">
+            <div class="coach-hero-copy">
+              <div class="eyebrow"><span class="eyebrow-line"></span> CAMPAIGN CLARITY COACH</div>
+              <h1 id="coach-title">Learn from the signal.<br /><span>Choose one next test.</span></h1>
+              <p>Describe the goal and what you observed. Get possible explanations to check, plus small experiments with a metric to watch.</p>
+            </div>
+            <div class="coach-hero-mark" aria-hidden="true"><span>↗</span><i></i><i></i><i></i><small>OBSERVE<br />· TEST · LEARN</small></div>
+          </header>
+          <div class="coach-note"><span>✳</span><p><strong>Start with evidence, not blame.</strong> A pattern can suggest a cause; it cannot prove one. Change one thing at a time and compare results.</p><span class="coach-mode" id="coach-mode">Guided demo works without an AI key</span></div>
+          <div class="coach-layout">
+            <form class="coach-form" id="coach-form">
+              <div class="coach-form-heading"><span>01 — YOUR CAMPAIGN</span><h2>What happened?</h2><p>Share only information you’re comfortable using in a demo. Don’t include private customer data.</p></div>
+              <label class="coach-field" for="coach-goal"><span>What was the campaign meant to achieve? <b>*</b></span><input id="coach-goal" name="goal" maxlength="300" required placeholder="e.g. Get more qualified sign-ups for a new running shoe" /></label>
+              <div class="coach-field-row">
+                <label class="coach-field" for="coach-platform"><span>Where did it run?</span><select id="coach-platform" name="platform"><option>Instagram Reels</option><option>TikTok</option><option>YouTube Shorts</option><option>LinkedIn</option><option>Website or landing page</option><option>Other / not sure</option></select></label>
+                <label class="coach-field" for="coach-audience"><span>Who was it for?</span><input id="coach-audience" name="audience" maxlength="200" placeholder="e.g. First-time city runners" /></label>
+              </div>
+              <label class="coach-field" for="coach-observation"><span>What did you actually observe? <b>*</b></span><textarea id="coach-observation" name="observation" maxlength="1000" required rows="4" placeholder="e.g. Lots of views, few people clicked the product link. Include numbers or feedback if you have them."></textarea><small>Views, clicks, watch time, comments, sign-ups, or audience feedback can help.</small></label>
+              <label class="coach-field" for="coach-known"><span>What do you already know? <small>Optional</small></span><textarea id="coach-known" name="knownSignals" maxlength="700" rows="3" placeholder="e.g. The video opened with a product shot; the link went to a general homepage."></textarea></label>
+              <div class="coach-form-actions"><button class="button coach-sample-button" id="coach-sample" type="button">Load sample scenario</button><button class="button button-primary coach-submit" id="coach-submit" type="submit">Explore possible causes <span>↗</span></button></div>
+              <p class="coach-form-status" id="coach-status" role="status" aria-live="polite">Notes are sent for analysis only when you click. They are not saved as a campaign.</p>
+            </form>
+            <section class="coach-results" id="coach-results" aria-live="polite" aria-label="Campaign diagnosis and experiments">
+              <div class="coach-empty"><span class="coach-empty-mark">✳</span><span class="coach-kicker">YOUR CLARITY BOARD</span><h2>A useful diagnosis starts with one signal.</h2><p>Fill in the campaign goal and observation, then explore a few explanations and low-risk tests.</p><ol><li><span>01</span> Describe the outcome</li><li><span>02</span> Check the evidence</li><li><span>03</span> Test one change</li></ol></div>
+            </section>
           </div>
         </section>
 
@@ -196,7 +232,7 @@
     </div>
     <aside class="demo-tour hidden" id="demo-tour" role="region" aria-labelledby="demo-tour-title" aria-live="polite">
       <div class="demo-tour-top"><span><i>✳</i> CREATORBRIDGE · GUIDED DEMO</span><button type="button" id="demo-tour-close" aria-label="End guided demo">×</button></div>
-      <div class="demo-tour-progress"><span id="demo-tour-count">01 / 04</span><span class="demo-tour-track"><i id="demo-tour-progress-fill"></i></span><span>90 SEC</span></div>
+      <div class="demo-tour-progress"><span id="demo-tour-count">01 / 05</span><span class="demo-tour-track"><i id="demo-tour-progress-fill"></i></span><span>90 SEC</span></div>
       <h2 id="demo-tour-title">Meet the marketplace.</h2>
       <p id="demo-tour-copy"></p>
       <div class="demo-tour-bottom"><button type="button" class="demo-tour-exit" id="demo-tour-exit">End tour</button><div><button type="button" class="demo-tour-back" id="demo-tour-back">← Back</button><button type="button" class="demo-tour-next" id="demo-tour-next">Next step →</button></div></div>
