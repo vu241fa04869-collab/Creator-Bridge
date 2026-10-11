@@ -29,6 +29,7 @@ let pulseBusy = false;
 let pulseCategory = "all";
 let pulseLens = "creator";
 let remoteBriefs = null;
+let latestCoachPlan = null;
 let toastTimer;
 let complaintHistory = [];
 let complaintBusy = false;
@@ -45,6 +46,7 @@ let demoTourStep = -1;
 let activeWorkspaceView = "explore";
 const clarityGuidance = {
   explore:{step:"define",context:"Start with the outcome you need. Compare creator fit against their visible work and workflow.",detail:["Define the audience and change you want.","Use the blocker to decide which skill or format matters.","Treat sample portfolios and rates as illustrative until confirmed."]},
+  coach:{step:"causes",context:"Read campaign outcomes as signals. Compare possible explanations with evidence, then test one change at a time.",detail:["Separate what you observed from what you think caused it.","Check the next available metric in the campaign path.","Change one variable and compare a fair baseline before deciding."]},
   pulse:{step:"causes",context:"Treat an update as a signal, not a conclusion. Explore what may be changing before you decide it affects your campaign.",detail:["Name the question the update raises.","Consider possible effects on creators, brands, or platforms.","Keep a signal separate from a verified cause until you check the source."]},
   profile:{step:"evidence",context:"Use the profile as evidence to inspect, not a guarantee. Check relevant work, workflow, availability, quote, and rights directly.",detail:["Compare sample work with the exact deliverable.","Ask how the creator will make and deliver the work.","Confirm portfolio ownership, availability, quote, revisions, and usage terms."]},
   briefs:{step:"details",context:"Turn the diagnosis into a shared plan. Surface missing scope, evidence, budget, timing, and usage decisions.",detail:["Record the outcome and the obstacle behind the request.","Separate confirmed evidence from assumptions to test.","Agree on deliverables, budget, deadline, revisions, and rights before work starts."]},
@@ -201,10 +203,22 @@ function openBriefForm(creatorId="",options={}){
     $("#brief-evidence").value=`Signal to verify: ${story.source||"Publisher"} · ${story.title}`;
     $("#brief-unknowns").value="Does this update change the needs of our specific audience or campaign? Check the publisher source before acting.";
     $("#ai-idea").value=`Draft an original campaign brief informed by this industry update: ${story.title}`;
+  }else if(options.coach){
+    const {input,result}=options.coach;
+    const test=result.experiments?.[0];
+    $("#brief-title").value=`${input.platform||"Campaign"} · next test`;
+    $("#brand-name").value="BYTE BLAST";
+    $("#brief-type").value="Social";
+    $("#brief-style").value="Focused test · change one variable";
+    $("#brief-idea").value=[`Goal: ${input.goal}`,`Next experiment: ${test?.title||"Run one focused campaign test"}`,test?.change&&`Change: ${test.change}`,test?.measure&&`Measure: ${test.measure}`].filter(Boolean).join("\n\n");
+    $("#brief-challenge").value=input.observation;
+    $("#brief-evidence").value=input.knownSignals;
+    $("#brief-unknowns").value=result.causes?.[0]?.evidenceToCheck?.[0]||"Which single change improves the campaign outcome? Compare it with a fair baseline.";
+    $("#ai-idea").value=`Create a campaign test for ${input.goal}. Keep the creative focused on one change and measure ${test?.measure||"the intended campaign outcome"}.`;
   }
   $("#brief-form").addEventListener("input",renderMatchPreview);
   $("#brief-form").addEventListener("change",renderMatchPreview);
-  if(options.demo||c||options.news)renderMatchPreview();
+  if(options.demo||c||options.news||options.coach)renderMatchPreview();
 $("#brief-title").focus();
 }
 function renderMatchPreview(){
@@ -282,19 +296,60 @@ function renderBriefs(){
   host.innerHTML=items.slice().reverse().map(b=>{const checks=briefClarity(b),open=checks.find(item=>!item.done);return `<article class="brief-row"><div class="brief-main"><span class="brief-icon">▤</span><span><h3>${escapeHtml(b.title)}</h3><p>${escapeHtml(b.brand)} · ${escapeHtml(b.contentType||b.type||"Campaign")}${b.creator?` · For ${escapeHtml(byId(b.creator)?.name||"creator")}`:""}</p><span class="brief-health"><strong>${checks.filter(item=>item.done).length}/${checks.length}</strong> clarity signals captured</span><small class="brief-next-check">${open?`Next to clarify: ${escapeHtml(open.label.toLowerCase())}`:"Review the agreement with your creator before work starts."}</small></span></div><div class="brief-meta"><span>${escapeHtml(b.createdAt)}</span><span class="status-pill">Draft</span><button class="view-profile" data-brief="${escapeHtml(b.id)}">Review ↗</button></div></article>`;}).join("");
 }
 function showView(name){
-  const views={explore:"#explore-view",pulse:"#pulse-view",briefs:"#briefs-view",complaints:"#complaints-view"};
+  const views={explore:"#explore-view",coach:"#coach-view",pulse:"#pulse-view",briefs:"#briefs-view",complaints:"#complaints-view"};
   Object.entries(views).forEach(([key,selector])=>$(selector).classList.toggle("hidden",key!==name));
   activeWorkspaceView=name;updateClarityMethod(name);
   document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("is-active",b.dataset.view===name));
-  $("#breadcrumb-current").textContent={explore:"Explore creators",pulse:"Creator Pulse",briefs:"My briefs",complaints:"Resolution studio"}[name]||"Explore creators";
+  $("#breadcrumb-current").textContent={explore:"Explore creators",coach:"Campaign coach",pulse:"Creator Pulse",briefs:"My briefs",complaints:"Resolution studio"}[name]||"Explore creators";
   if(name==="briefs")renderBriefs();
   if(name==="pulse")loadPulse();
   if(name==="complaints"&&demoTourStep!==3)setTimeout(()=>$("#complaint-input")?.focus(),0);
+}
+
+function guidedCoachFallback(input){
+  const text=`${input.observation} ${input.knownSignals}`.toLowerCase();
+  const fewClicks=/few click|low click|click.?through|only \d+ (purchase|order|sign.?up)|views?.{0,30}(but|yet|while).{0,20}(click|visit)/.test(text);
+  const lowAttention=/low|few|little|weak|drop|short|skip|scroll past|not watch/.test(text);
+  const causes=[
+    fewClicks?{title:"The promise and destination may not match",hypothesis:"People may notice the campaign but not see a clear reason to take the next step, or the landing page may not continue the same promise.",signalStrength:"Worth checking",evidenceToCheck:["Compare the creative’s promise and call to action with the first screen of the destination page.","Check the path from impressions to clicks to the intended action."]}:lowAttention?{title:"The opening may not earn attention",hypothesis:"The opening may not quickly connect the audience’s need to the campaign’s promise.",signalStrength:"Worth checking",evidenceToCheck:["Review retention or watch-time drop-off near the opening.","Compare audience feedback with the need the campaign is meant to serve."]}:{title:"The audience and message may be out of alignment",hypothesis:"The message, audience segment, or offer may not be specific enough to prompt the intended action.",signalStrength:"Low",evidenceToCheck:["Look for repeated questions or confusion in feedback.","Compare results by audience segment, if available."]},
+    {title:"The next step may not be clear enough",hypothesis:"The call to action, offer, or route to act may ask people to interpret what to do next.",signalStrength:"Worth checking",evidenceToCheck:["Check whether one specific action is easy to find.","Compare clicks or actions with the number of people who saw the content."]},
+    {title:"Delivery conditions may affect the signal",hypothesis:"Placement, timing, format, or a small sample could be affecting the observed result.",signalStrength:"Low",evidenceToCheck:["Compare the same placement, run length, and spend.","Check whether enough data has collected before deciding."]}
+  ];
+  const platform=input.platform||"the selected platform";
+  return {readout:"The notes suggest questions to investigate, not a proven cause. Start by locating which campaign stage shows the clearest change.",causes,experiments:[
+    {title:"Test the opening",hypothesis:"A more audience-specific opening may improve early attention.",change:`Make two versions for ${platform} with different opening hooks; keep the rest the same.`,measure:"Compare early retention or the platform’s equivalent opening-view metric."},
+    {title:"Make the next step specific",hypothesis:"One clear action may help interested viewers continue.",change:"Use one concrete call to action and repeat its promise on the destination page.",measure:"Track click-through and the intended action after the click."},
+    {title:"Compare one audience segment",hypothesis:"The offer may be more relevant to one audience group.",change:"If appropriate, compare the same creative with one audience segment changed at a time.",measure:"Compare qualified actions per person reached over the same time window."}
+  ],guardrail:"Guided demo hypotheses are not a causal finding. Change one variable at a time, compare like with like, and allow enough data to collect.",source:"local-guided-demo",aiGenerated:false};
+}
+function renderCoachResult(result,input){
+  latestCoachPlan={result,input};
+  const mode=result.aiGenerated?`Gemini · ${escapeHtml(result.model||"AI-assisted")}`:"Guided demo · sample rules";
+  const causes=(result.causes||[]).slice(0,3).map((cause,index)=>`<article class="coach-cause-card"><div class="coach-card-top"><span class="coach-card-index">0${index+1}</span><span class="coach-strength">${escapeHtml(cause.signalStrength||"Hypothesis")}</span></div><h3>${escapeHtml(cause.title)}</h3><p>${escapeHtml(cause.hypothesis)}</p><div class="coach-check-list"><strong>CHECK THIS EVIDENCE</strong><ul>${(cause.evidenceToCheck||[]).slice(0,3).map(item=>`<li>${escapeHtml(item)}</li>`).join("")}</ul></div></article>`).join("");
+  const experiments=(result.experiments||[]).slice(0,3).map((experiment,index)=>`<article class="coach-experiment"><span class="coach-experiment-number">0${index+1}</span><div><span class="coach-experiment-kicker">ONE CHANGE TO TRY</span><h3>${escapeHtml(experiment.title)}</h3><p class="coach-experiment-hypothesis">${escapeHtml(experiment.hypothesis)}</p><p><strong>Change</strong> ${escapeHtml(experiment.change)}</p><p><strong>Measure</strong> ${escapeHtml(experiment.measure)}</p></div></article>`).join("");
+  $("#coach-mode").textContent=mode;
+  $("#coach-results").innerHTML=`<div class="coach-result-head"><span class="coach-kicker">YOUR CLARITY BOARD</span><span class="coach-source-badge">${mode}</span><h2>Start with the signal you can check.</h2><p>${escapeHtml(result.readout||"Use these hypotheses as prompts for checking your campaign data.")}</p></div><div class="coach-results-section"><div class="coach-section-heading"><span>02 — POSSIBLE EXPLANATIONS</span><h2>What might be happening?</h2><p>Signal strength reflects how well the notes fit a question to investigate. It is not proof.</p></div><div class="coach-cause-list">${causes}</div></div><div class="coach-results-section"><div class="coach-section-heading"><span>03 — SMALL EXPERIMENTS</span><h2>What can you try next?</h2><p>Pick one test. Keep the other conditions as steady as you can.</p></div><div class="coach-experiment-list">${experiments}</div></div><div class="coach-guardrail"><span>✳</span><p>${escapeHtml(result.guardrail||"Compare like with like, and do not treat correlation as proof.")}</p></div><div class="coach-result-actions"><button type="button" class="button coach-save-brief" id="coach-create-brief">Turn first test into a brief <span>↗</span></button></div><p class="coach-result-disclaimer">Based only on the campaign notes you provided. CreatorBridge does not fetch or verify your platform analytics.</p>`;
+}
+async function analyzeCampaign(event){
+  event.preventDefault();
+  const form=$("#coach-form"),button=$("#coach-submit"),status=$("#coach-status");
+  const fields=Object.fromEntries(new FormData(form).entries());
+  const input={goal:fields.goal.trim(),platform:fields.platform,audience:fields.audience.trim(),observation:fields.observation.trim(),knownSignals:fields.knownSignals.trim()};
+  if(!input.goal||input.observation.length<12){status.textContent="Add a campaign goal and at least one specific observation.";return;}
+  button.disabled=true;button.textContent="Exploring the signal…";status.textContent="Comparing possible explanations with the details you shared…";
+  try{
+    let result,localFallback=false;
+    try{result=await apiRequest("/api/ai/campaign-diagnosis",{method:"POST",body:JSON.stringify(input)});}
+    catch{result=guidedCoachFallback(input);localFallback=true;}
+    renderCoachResult(result,input);
+    status.textContent=result.aiGenerated?"AI hypotheses are ready. Review and verify them against your campaign data.":localFallback?"The API is unavailable, so this is a local guided fallback. No AI service was reached.":"Guided hypotheses are ready. Add a Gemini API key for AI-assisted analysis.";
+  }finally{button.disabled=false;button.innerHTML="Explore possible causes <span>↗</span>";}
 }
 const guidedDemoSteps=[
   {view:"explore",target:"#match-demo-title",title:"Meet the marketplace.",copy:"Start with a campaign idea and explore creator profiles. The included portfolios and rates are clearly labeled demo concepts, so viewers know what is sample data.",next:"See live signals"},
   {view:"pulse",target:"#pulse-title",title:"Read the latest signal.",copy:"Creator Pulse brings recent publisher headlines into the workspace. Show the creator or brand perspective, then open a source to verify the story.",next:"Build a sample brief"},
   {view:"brief",target:"#match-preview",title:"Turn an idea into a brief.",copy:"This editable sample brief produces a shortlist with visible fit reasons. The walkthrough does not call Gemini, save the draft, or change your briefs.",next:"Meet BridgeBuddy"},
+  {view:"coach",target:"#coach-title",title:"Find a testable next move.",copy:"The Campaign Clarity Coach separates observations from hypotheses, then suggests small experiments and a metric to track. Its sample is not saved or sent.",next:"Meet BridgeBuddy"},
   {view:"complaints",target:"#complaint-title",title:"Resolve friction with care.",copy:"BridgeBuddy can organize a concern into a calm next step and an editable message. Choose a scenario to explore; the tour will not send anything.",next:"Finish tour"}
 ];
 function clearGuidedDemoTarget(){document.querySelectorAll(".demo-tour-highlight").forEach(element=>element.classList.remove("demo-tour-highlight"));}
@@ -311,8 +366,9 @@ function renderGuidedDemo(){
     if(!backdrop.classList.contains("hidden"))closeModal();
     showView(step.view);
   }
+  if(step.view==="coach"){$("#coach-sample").click();$("#coach-form").requestSubmit();}
   const tour=$("#demo-tour");
-  $("#demo-tour-count").textContent=`0${demoTourStep+1} / 04`;
+  $("#demo-tour-count").textContent=`${String(demoTourStep+1).padStart(2,"0")} / ${String(guidedDemoSteps.length).padStart(2,"0")}`;
   $("#demo-tour-progress-fill").style.width=`${((demoTourStep+1)/guidedDemoSteps.length)*100}%`;
   $("#demo-tour-title").textContent=step.title;
   $("#demo-tour-copy").textContent=step.copy;
@@ -338,6 +394,7 @@ function setServiceStatus(health){
   badge.title=`Database: ${health?.database||"offline"}; Gemini AI: ${ai?"configured":"not configured"}`;
   badge.querySelector("span").textContent=database?(ai?"Mongo + AI":"Mongo connected · AI key needed"):(ai?"AI ready · demo data":"Guided demo mode");
   if(mode)mode.textContent=ai?"Gemini AI · private session":"Guided demo · add Gemini for AI";
+  const coachMode=$("#coach-mode");if(coachMode)coachMode.textContent=ai?"Gemini assist available · guided fallback":"Guided demo works without an AI key";
 }
 
 function rootCauseStepComplete(step){
@@ -455,6 +512,18 @@ document.querySelector(".pulse-filters").addEventListener("click",event=>{const 
 document.querySelector(".pulse-lens").addEventListener("click",event=>{const button=event.target.closest("[data-pulse-lens]");if(!button)return;pulseLens=button.dataset.pulseLens;document.querySelectorAll("[data-pulse-lens]").forEach(item=>{const active=item===button;item.classList.toggle("is-active",active);item.setAttribute("aria-pressed",String(active));});renderPulse();});
 $("#pulse-grid").addEventListener("click",event=>{const button=event.target.closest("[data-pulse-brief]");if(!button)return;const article=pulseArticles[Number(button.dataset.pulseBrief)];if(article)openBriefForm("",{news:article});});
 $("#open-complaint-studio").addEventListener("click",()=>showView("complaints"));
+$("#open-coach").addEventListener("click",()=>showView("coach"));
+$("#coach-form").addEventListener("submit",analyzeCampaign);
+$("#coach-sample").addEventListener("click",()=>{
+  $("#coach-goal").value="Get qualified product visits and first orders for a sustainable running jacket";
+  $("#coach-platform").value="Instagram Reels";
+  $("#coach-audience").value="First-time city runners";
+  $("#coach-observation").value="The reel reached 12,400 views and 248 product-link clicks, but only 3 purchases. A few comments asked whether the jacket actually keeps rain out.";
+  $("#coach-known").value="The jacket appears in the opening frame, the call to action says ‘Learn more,’ and the link opens a general product homepage. The rain test appears near the end of the reel.";
+  $("#coach-status").textContent="Sample scenario loaded. Choose Explore possible causes when you’re ready.";
+  $("#coach-goal").focus();
+});
+$("#coach-results").addEventListener("click",event=>{if(event.target.closest("#coach-create-brief")&&latestCoachPlan)openBriefForm("",{coach:latestCoachPlan});});
 $("#complaint-form").addEventListener("submit",event=>{event.preventDefault();const input=$("#complaint-input"),message=input.value;input.value="";$("#complaint-char-count").textContent="0 / 3,000";input.style.height="";sendComplaint(message);});
 $("#complaint-input").addEventListener("input",event=>{$("#complaint-char-count").textContent=`${event.target.value.length.toLocaleString("en-IN")} / 3,000`;event.target.style.height="auto";event.target.style.height=`${Math.min(event.target.scrollHeight,120)}px`;});
 $("#clear-complaint-chat").addEventListener("click",resetComplaintChat);
