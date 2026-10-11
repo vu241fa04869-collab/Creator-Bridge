@@ -211,11 +211,21 @@ function closeModal(){backdrop.classList.add("hidden");document.body.style.overf
 function profileModal(id){
   const c=byId(id);if(!c)return;
   updateClarityMethod("profile");
+  const passportChecks=[
+    ["Identity & account","DEMO ONLY","No identity review or creator account is connected."],
+    ["Portfolio & ownership","ILLUSTRATIVE","Sample concepts are not proof of commissioned work or ownership."],
+    ["Audience & performance","NO DATA","No platform analytics, audience geography, or performance data is connected."],
+    ["Availability & quote","TO CONFIRM","Availability and the listed illustrative rate need direct confirmation."],
+    ["Disclosure & claims","TO AGREE","Set sponsorship disclosure and product-claim review for each campaign."],
+    ["Commercial usage rights","NOT GRANTED","Agree channels, territory, term, edits, and paid usage in writing."]
+  ];
+  const passportHtml=passportChecks.map(([label,status,detail],index)=>`<article class="passport-check"><div class="passport-check-top"><span class="passport-number">0${index+1}</span><span class="passport-state">${status}</span></div><strong>${label}</strong><p>${detail}</p></article>`).join("");
   showModal(`<div class="profile-hero"><span class="creator-avatar" style="background:${c.palette[0]}55;color:${c.palette[1]}">${c.initials}</span><div><h3 id="modal-title">${escapeHtml(c.name)}${c.verified?'<i class="verified-mark" title="Creator-provided profile details">✓</i>':''}</h3><p>${escapeHtml(c.specialty)} · ${escapeHtml(c.location)}</p></div></div>
     <div class="profile-section"><h4>SELECTED WORK <span class="section-note">ILLUSTRATIVE DEMO CONCEPTS</span></h4><div class="portfolio-grid">${(c.portfolio||[]).map((work,index)=>`<article class="portfolio-tile" style="--cover-a:${c.palette[index%c.palette.length]};--cover-b:${c.palette[(index+1)%c.palette.length]}"><div class="portfolio-cover"><span>✳</span><small>CONCEPT ${index+1}</small></div><div class="portfolio-caption"><strong>${escapeHtml(work.title)}</strong><small>${escapeHtml(work.type)} · ${escapeHtml(work.tool)}</small></div></article>`).join("")}</div></div>
     <div class="profile-section"><h4>ABOUT</h4><p>${escapeHtml(c.bio)} This is a demo creator profile prepared for the hackathon prototype.</p><div class="profile-stats"><span><strong>${(c.portfolio||[]).length}</strong>Sample concepts</span><span><strong>${c.tools.length}</strong>AI tools listed</span><span><strong>₹${c.rate.toLocaleString("en-IN")}</strong>Illustrative rate</span></div></div>
     <div class="profile-section"><h4>TOOLS & SKILLS</h4><div class="tag-row">${[...c.tools,...c.skills].map(x=>`<span class="tag">${escapeHtml(x)}</span>`).join("")}</div></div>
     <div class="profile-section"><h4>WORKFLOW</h4><p>${escapeHtml(c.workflow)}</p></div>
+    <section class="profile-section proof-passport" aria-labelledby="proof-passport-title"><div class="passport-heading"><div><span class="passport-kicker">CREATOR PROOF PASSPORT</span><h4 id="proof-passport-title">Check the evidence before you book.</h4></div><span class="passport-count">0 / 6 confirmed</span></div><p class="passport-intro">This demo profile has no independently verified items. Review what needs evidence, and agree campaign terms directly with the creator.</p><div class="passport-check-grid">${passportHtml}</div><div class="passport-note"><strong>Passport status</strong><span>Demo only · no identity, audience, ownership, availability, or rights checks have been performed.</span></div><button class="button passport-action" type="button" data-start-passport="${c.id}">Draft a verification checklist <span>↗</span></button></section>
     <div class="profile-section creator-validation"><h4>CHECK THE FIT BEFORE YOU COMMIT</h4><ul><li>Compare the sample concepts with the exact deliverable you need.</li><li>Ask about availability, scope, revisions, and a written quote.</li><li>Agree on commercial usage, credit, and final-file handoff.</li></ul></div>
     <div class="profile-footer"><span class="disclaimer">Demo profile · Not independently verified</span><button class="button button-primary" data-start-brief="${c.id}">Invite to a brief ↗</button></div>`);
 }
@@ -240,7 +250,20 @@ function openBriefForm(creatorId="",options={}){
       <div class="form-field full"><label class="check-field"><input name="commercial" type="checkbox" /> Commercial usage rights are required</label></div>
       <input name="creator" type="hidden" value="${c?.id||""}" />
     </div><section class="match-preview" id="match-preview" aria-live="polite"></section><div class="form-actions"><button class="button button-secondary" type="button" data-close>Cancel</button><button class="button button-primary" type="submit">Save brief <span>↗</span></button></div></form>`);
-  if(options.demo){
+  if(options.passport){
+    $("#modal-title").textContent="Creator proof review · draft";
+    $("#modal-title").parentElement.querySelector("p").textContent="Evidence checklist · review and edit before saving.";
+    $("#brief-title").value="Proof review · "+(c?.name||"creator");
+    $("#brand-name").value="BYTE BLAST";
+    $("#brief-type").value="Campaign";
+    $("#brief-style").value="Creator diligence · confirm before booking";
+    $("#brief-idea").value="Before booking "+(c?.name||"this creator")+", review the Creator Proof Passport and confirm identity, portfolio ownership, audience evidence, availability, disclosure, and commercial usage terms.";
+    $("#brief-challenge").value="Profile details and sample concepts are illustrative until the creator provides current evidence.";
+    $("#brief-evidence").value="Listed specialty: "+(c?.specialty||"Not listed")+". Tools: "+((c?.tools||[]).join(", ")||"Not listed")+". Listed rate is illustrative; confirm a written quote.";
+    $("#brief-unknowns").value="Which audience and portfolio details can the creator substantiate? What disclosure, deliverables, revision, licensing term, territory, channels, and paid usage have both parties agreed?";
+    $("#ai-idea").value="Prepare a creator review brief for "+(c?.name||"a creator")+". Separate creator-provided information from independently checked evidence; list open questions for audience, portfolio ownership, availability, disclosure, and commercial usage rights.";
+    $("#brief-form [name=commercial]").checked=true;
+  }else if(options.demo){
     $("#brief-title").value="City after rain · launch film";
     $("#brand-name").value="Monsoon Running · demo";
     $("#brief-type").value="Video";
@@ -636,6 +659,7 @@ $("#demo-tour-next").addEventListener("click",()=>{if(demoTourStep>=guidedDemoSt
 backdrop.addEventListener("click",event=>{if(event.target===backdrop||event.target.closest("[data-close]")){closeModal();if(demoTourStep===2)endGuidedDemo(false);}});
 modal.addEventListener("click",event=>{
   const invite=event.target.closest("[data-start-brief]");if(invite){const id=invite.dataset.startBrief;closeModal();openBriefForm(id);return;}
+  const passport=event.target.closest("[data-start-passport]");if(passport){const id=passport.dataset.startPassport;closeModal();openBriefForm(id,{passport:true});return;}
   const choice=event.target.closest("[data-select-match]");if(choice){const field=$("#brief-form [name=creator]");if(field){field.value=choice.dataset.selectMatch;renderMatchPreview();notify(`${byId(choice.dataset.selectMatch)?.name||"Creator"} added to the brief.`);}return;}
 });
 modal.addEventListener("click",async event=>{

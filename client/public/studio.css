@@ -372,6 +372,33 @@ body { background: radial-gradient(ellipse at 88% 4%, #dfece1 0, transparent 30%
   *,*::before,*::after { scroll-behavior:auto!important; animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; }
 }
 
+/* Creator Proof Passport */
+.proof-passport { display:grid; gap:11px; margin:15px 0; padding:15px; border:1px solid #d9e5d8; border-radius:15px; background:linear-gradient(145deg,#f4f7ed,#fffaf1); }
+.passport-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.passport-kicker { color:#718b78; font-size:7px; font-weight:800; letter-spacing:1.25px; }
+.passport-heading h4 { margin:4px 0 0; color:#214c3b; font:400 20px "DM Serif Display",Georgia,serif; }
+.passport-count { flex:none; padding:7px 9px; border:1px solid #d7e2d4; border-radius:99px; background:#fffefa; color:#526f5a; font-size:8px; font-weight:800; }
+.passport-intro { max-width:600px; margin:0; color:#718078; font-size:9px; line-height:1.55; }
+.passport-check-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.passport-check { display:grid; align-content:start; gap:5px; min-width:0; padding:10px; border:1px solid #e3e8de; border-radius:10px; background:#fffefa; }
+.passport-check-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.passport-number { display:grid; place-items:center; width:20px; height:20px; border-radius:7px; background:#edf2e8; color:#3d7256; font-size:8px; font-weight:800; }
+.passport-state { color:#9a6c50; font-size:6px; font-weight:800; letter-spacing:.7px; text-align:right; }
+.passport-check>strong { color:#315644; font:700 9px Manrope,sans-serif; }
+.passport-check>p { margin:0; color:#79867c; font-size:8px; line-height:1.5; }
+.passport-note { display:flex; align-items:flex-start; gap:8px; padding:9px 10px; border-left:2px solid #d89170; border-radius:3px 8px 8px 3px; background:#fff5ec; color:#8a745f; font-size:8px; line-height:1.5; }
+.passport-note strong { flex:none; color:#a5684c; font-size:8px; }
+.passport-action { justify-self:start; border:1px solid #cbdcc9; border-radius:99px; background:#e9f2e5; color:#28634d; font-size:9px; }
+.passport-action span { margin-left:5px; color:#d98465; }
+.passport-action:hover { transform:translateY(-1px); background:#dcebd8; }
+.passport-card-status { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:10px 0 0; padding:7px 9px; border:1px solid #e2e8dd; border-radius:8px; background:#f7f8ef; }
+.passport-card-status span { color:#71887a; font-size:6px; font-weight:800; letter-spacing:.65px; }
+.passport-card-status strong { color:#a16f53; font-size:7px; }
+@media(max-width:600px) {
+  .passport-heading { align-items:flex-start; flex-direction:column; }
+  .passport-check-grid { grid-template-columns:1fr; }
+}
+
 .retail-promo { display:grid; grid-template-columns:48px minmax(0,1fr) auto; align-items:center; gap:15px; margin:-10px 0 32px; padding:17px 19px; border:1px solid #d9e1d5; border-radius:16px; background:linear-gradient(105deg,#19392f,#245640); color:#f7f3e8; box-shadow:0 14px 30px #21463712; }
 .retail-promo-mark { display:grid; place-items:center; width:43px; height:43px; border-radius:14px 14px 14px 5px; background:#c7e8cf; color:#1b5842; font-size:18px; }
 .retail-promo>div>span { color:#add5b8; font-size:7px; font-weight:800; letter-spacing:1.3px; }
