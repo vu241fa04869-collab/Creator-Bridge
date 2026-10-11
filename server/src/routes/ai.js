@@ -35,6 +35,63 @@ const complaintSchema = {
   additionalProperties: false
 };
 
+const campaignDiagnosisSchema = {
+  type: "object",
+  properties: {
+    readout: { type: "string", description: "One neutral sentence summarizing the observed signal, not claiming causation." },
+    causes: {
+      type: "array", minItems: 2, maxItems: 3,
+      items: { type: "object", properties: {
+        title: { type: "string" },
+        hypothesis: { type: "string", description: "A possible explanation, explicitly framed as a hypothesis." },
+        signalStrength: { type: "string", enum: ["Low", "Worth checking", "Some supporting signal"] },
+        evidenceToCheck: { type: "array", minItems: 1, maxItems: 3, items: { type: "string" } }
+      }, required: ["title", "hypothesis", "signalStrength", "evidenceToCheck"], additionalProperties: false }
+    },
+    experiments: {
+      type: "array", minItems: 3, maxItems: 3,
+      items: { type: "object", properties: {
+        title: { type: "string" },
+        hypothesis: { type: "string" },
+        change: { type: "string", description: "One small variable to change while keeping other factors stable." },
+        measure: { type: "string", description: "A measurable result to track." }
+      }, required: ["title", "hypothesis", "change", "measure"], additionalProperties: false }
+    },
+    guardrail: { type: "string", description: "A practical reminder about attribution, sample size, or making a fair comparison." }
+  },
+  required: ["readout", "causes", "experiments", "guardrail"],
+  additionalProperties: false
+};
+
+function guidedCampaignDiagnosis(input) {
+  const text = `${input.observation} ${input.knownSignals}`.toLowerCase();
+  const hasClicks = /click|tap|visit|traffic/.test(text);
+  const hasViews = /view|impression|reach|watch/.test(text);
+  const hasLowEngagement = /low|few|little|weak|drop|short|skip|not watch|scroll past|no one|didn't|did not/.test(text);
+  const hasConversionSignal = /sign.?up|conversion|purchase|sale|lead|order|download/.test(text);
+  const firstCause = hasViews && hasClicks && /few click|low click|click.?through|views?.{0,30}(but|yet|while).{0,20}(click|visit)|click.{0,20}(low|few)/.test(text)
+    ? { title: "The promise and destination may not match", hypothesis: "People may understand the creative but not see a clear reason to take the next step, or the landing page may not continue the same message.", signalStrength: "Worth checking", evidenceToCheck: ["Compare the creative’s promise and call to action with the first screen of the destination page.", "Check the path from impressions to clicks to the intended action."] }
+    : hasLowEngagement
+      ? { title: "The opening may not earn attention", hypothesis: "The first moments or first line may not quickly connect the audience’s need to the campaign’s promise.", signalStrength: "Worth checking", evidenceToCheck: ["Review retention or watch-time drop-off near the opening.", "Compare comments or feedback with the audience need the campaign is meant to serve."] }
+      : { title: "The audience and message may be out of alignment", hypothesis: "The message, audience segment, or offer may not be specific enough to prompt the intended action.", signalStrength: "Low", evidenceToCheck: ["Look for repeated questions or confusion in audience feedback.", "Compare results by audience segment and message, if those breakdowns are available."] };
+  const causes = [firstCause,
+    { title: "The next step may not be clear enough", hypothesis: "The call to action, offer, or route to act may ask for too much interpretation.", signalStrength: hasClicks || hasConversionSignal ? "Worth checking" : "Low", evidenceToCheck: ["Check whether the action is specific and easy to find.", "Compare clicks or actions against the number of people who saw the content."] },
+    { title: "Delivery conditions may be affecting the signal", hypothesis: "Placement, timing, format, or a small sample could be masking how the creative performs.", signalStrength: "Low", evidenceToCheck: ["Confirm the same platform, placement, run length, and spend when comparing results.", "Check whether the sample is large enough to interpret before changing the campaign."] }
+  ];
+  const platform = input.platform || "the selected platform";
+  const experiments = [
+    { title: "Test the opening", hypothesis: "A more audience-specific first line or frame may improve early attention.", change: `Make two versions for ${platform} with different opening hooks; keep the rest of the creative the same.`, measure: "Compare early retention or the platform’s equivalent opening-view metric." },
+    { title: "Make the next step more specific", hypothesis: "A clear, single action may help interested viewers continue.", change: "Use one concrete call to action and make the destination’s first screen repeat the same promise.", measure: "Track click-through and the intended action after the click." },
+    { title: "Compare one audience segment", hypothesis: "The offer may be more relevant to one audience group than another.", change: "If appropriate and permitted, compare the same creative with one audience segment changed at a time.", measure: "Compare qualified actions per person reached, using the same time window." }
+  ];
+  return {
+    readout: hasViews && hasClicks && hasConversionSignal ? "The funnel has several stages to inspect; locate where the largest drop occurs before changing the creative." : "The notes point to questions to investigate, not a proven cause. Start by locating which stage of the campaign shows the clearest change.",
+    causes,
+    experiments,
+    guardrail: "These are guided hypotheses, not a causal finding. Compare like with like, change one variable at a time, and allow enough data to collect before deciding."
+  };
+}
+
 function guidedComplaintReply(message) {
   const text = message.toLowerCase();
   const category = /refund|charge|paid|payment|payout|invoice|billing/.test(text) ? "Payment or refund"
@@ -102,6 +159,50 @@ router.post("/brief", async (req, res) => {
   } catch (error) {
     const timeout = error.name === "TimeoutError" || error.name === "AbortError";
     res.status(timeout ? 504 : 502).json({ error: timeout ? "Gemini took too long to respond. Try again." : "Could not reach Gemini. Check the server connection and try again." });
+  }
+});
+
+router.post("/campaign-diagnosis", async (req, res) => {
+  const input = {
+    goal: String(req.body?.goal || "").trim().slice(0, 300),
+    platform: String(req.body?.platform || "").trim().slice(0, 80),
+    audience: String(req.body?.audience || "").trim().slice(0, 200),
+    observation: String(req.body?.observation || "").trim().slice(0, 1000),
+    knownSignals: String(req.body?.knownSignals || "").trim().slice(0, 700)
+  };
+  if (!input.goal || input.observation.length < 12) return res.status(400).json({ error: "Add a campaign goal and a specific observation before exploring causes." });
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return res.json({ ...guidedCampaignDiagnosis(input), source: "guided-demo", aiGenerated: false });
+  const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+  const instructions = "You are CreatorBridge Campaign Clarity Coach. Help people diagnose underperforming campaigns neutrally. Treat every cause as a hypothesis, never claim evidence proves causation, never blame a creator, and do not invent metrics or platform rules. Base suggestions only on the user-provided observations. If data is absent, say so by using low signal strength and recommend what to inspect. Experiments must be small, ethical, measurable, and change one main variable at a time; avoid discriminatory targeting or sensitive personal data. Keep advice practical and concise. Return only JSON matching the schema.";
+  const prompt = `Review this campaign signal and offer 2–3 testable hypotheses plus exactly three small experiments. Do not treat correlation as causation.\n\nCampaign goal: ${input.goal}\nPlatform: ${input.platform || "Not specified"}\nAudience: ${input.audience || "Not specified"}\nObserved results or feedback: ${input.observation}\nKnown details: ${input.knownSignals || "None supplied"}`;
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: instructions }] },
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseFormat: { text: { mimeType: "APPLICATION_JSON", schema: campaignDiagnosisSchema } }, temperature: 0.25 }
+      }),
+      signal: AbortSignal.timeout(45000)
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      if (response.status === 429 || response.status === 503) return res.json({ ...guidedCampaignDiagnosis(input), source: "guided-demo", aiGenerated: false });
+      return res.status(502).json({ error: `The campaign coach could not reply: ${payload?.error?.message || `HTTP ${response.status}`}` });
+    }
+    const output = payload?.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("");
+    if (!output) return res.status(502).json({ error: "The campaign coach returned no analysis. Please try again." });
+    const result = JSON.parse(output);
+    if (!Array.isArray(result.causes) || result.causes.length < 2 || !Array.isArray(result.experiments) || result.experiments.length !== 3) {
+      return res.status(502).json({ error: "The campaign coach returned an incomplete plan. Please try again." });
+    }
+    res.json({ ...result, source: "gemini", aiGenerated: true, model });
+  } catch (error) {
+    const timeout = error.name === "TimeoutError" || error.name === "AbortError";
+    res.status(timeout ? 504 : 502).json({ error: timeout ? "The campaign coach took too long to respond. Try again." : "Could not reach the AI service. Check the server connection and try again." });
   }
 });
 
